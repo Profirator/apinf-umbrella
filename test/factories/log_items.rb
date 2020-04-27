@@ -3,7 +3,6 @@ FactoryBot.define do
     api_key { "UfhkQUBgWQbJ0ZVqnJ4TvA7quGCZHYTFCXwSfOTQ" }
     request_accept_encoding { "*/*" }
     request_at { Time.now.utc }
-    request_hierarchy { ["0/127.0.0.1/", "1/127.0.0.1/hello"] }
     request_host { "127.0.0.1" }
     request_ip { "127.0.0.1" }
     request_ip_city { "Golden" }
@@ -14,7 +13,6 @@ FactoryBot.define do
     request_scheme { "http" }
     request_query { { "foo" => "bar" } }
     request_size { 140 }
-    request_url { "http://127.0.0.1/hello/?foo=bar" }
     request_url_query { "foo=bar" }
     request_user_agent { "ApacheBench/2.3" }
     request_user_agent_family { "AB (Apache Bench)" }
@@ -38,7 +36,6 @@ FactoryBot.define do
       request_ip_region { '"><script class="xss-test">alert("5");</script>' }
       request_path { '"><script class="xss-test">alert("6");</script>' }
       request_query { { "foo" => '"><script class="xss-test">alert("7");</script>' } }
-      request_url { '"><script class="xss-test">alert("8");</script>' }
       request_url_query { '"><script class="xss-test">alert("8");</script>' }
       request_user_agent { '"><script class="xss-test">alert("9");</script>' }
       response_content_type { '"><script class="xss-test">alert("10");</script>' }
@@ -50,7 +47,6 @@ FactoryBot.define do
     factory :google_log_item do
       request_host { "localhost" }
       request_path { "/google/hello/" }
-      request_hierarchy { ["0/localhost/", "1/localhost/google/", "2/localhost/google/hello"] }
     end
   end
 end

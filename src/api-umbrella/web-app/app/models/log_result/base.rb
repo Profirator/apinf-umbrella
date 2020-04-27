@@ -7,7 +7,11 @@ class LogResult::Base
   end
 
   def total
-    raw_result["hits"]["total"]
+    if ApiUmbrellaConfig[:elasticsearch][:api_version] >= 7
+      raw_result["hits"]["total"]["value"]
+    else
+      raw_result["hits"]["total"]
+    end
   end
 
   def documents
@@ -37,13 +41,19 @@ class LogResult::Base
       @drilldown = []
 
       if(aggregations && aggregations["drilldown"])
-        aggregations["drilldown"]["buckets"].each do |bucket|
-          depth, path = bucket["key"].split("/", 2)
-          terminal = !path.end_with?("/")
+        depth = @search.drilldown_depth
+        descendent_depth = depth + 1
 
-          depth = depth.to_i
-          descendent_depth = depth + 1
+        aggregations["drilldown"]["buckets"].each do |bucket|
+          if ApiUmbrellaConfig[:elasticsearch][:template_version] < 2
+            parts = bucket["key"].split("/", 2)
+            path = parts[1]
+          else
+            path = File.join([@search.drilldown_parent, bucket["key"]].compact)
+          end
+
           descendent_prefix = File.join(descendent_depth.to_s, path)
+          terminal = !path.end_with?("/")
 
           @drilldown << {
             :depth => depth,

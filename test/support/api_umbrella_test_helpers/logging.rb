@@ -35,22 +35,29 @@ module ApiUmbrellaTestHelpers
           loop do
             result = LogItem.client.search({
               :index => "_all",
-              :type => "log",
               :body => {
                 :query => query,
               },
             })
 
-            if(result && result["hits"] && result["hits"]["total"] >= 1)
-              if(result["hits"]["total"] > 1)
-                raise "Found more than 1 log result for query. This should not happen. Query: #{query.inspect} Result: #{result.inspect}"
+            if(result && result["hits"] && result["hits"]["total"])
+              if $config["elasticsearch"]["api_version"] >= 7
+                total = result["hits"]["total"]["value"]
+              else
+                total = result["hits"]["total"]
               end
 
-              return {
-                :result => result,
-                :hit => result["hits"]["hits"][0],
-                :hit_source => result["hits"]["hits"][0]["_source"],
-              }
+              if total >= 1
+                if total > 1
+                  raise "Found more than 1 log result for query. This should not happen. Query: #{query.inspect} Result: #{result.inspect}"
+                end
+
+                return {
+                  :result => result,
+                  :hit => result["hits"]["hits"][0],
+                  :hit_source => result["hits"]["hits"][0]["_source"],
+                }
+              end
             end
 
             sleep 0.1
@@ -64,8 +71,6 @@ module ApiUmbrellaTestHelpers
     def assert_logs_base_fields(record, user = nil)
       assert_kind_of(Numeric, record["request_at"])
       assert_match(/\A\d{13}\z/, record["request_at"].to_s)
-      assert_kind_of(Array, record["request_hierarchy"])
-      assert_operator(record["request_hierarchy"].length, :>=, 1)
       assert_equal("127.0.0.1:9080", record["request_host"])
       assert_match(/\A\d+\.\d+\.\d+\.\d+\z/, record["request_ip"])
       assert_equal("GET", record["request_method"])
@@ -76,6 +81,8 @@ module ApiUmbrellaTestHelpers
       if($config["elasticsearch"]["template_version"] < 2)
         assert_kind_of(String, record["request_url"])
         assert_equal(true, record["request_url"].start_with?("http://127.0.0.1:9080/"), record["request_url"])
+        assert_kind_of(Array, record["request_hierarchy"])
+        assert_operator(record["request_hierarchy"].length, :>=, 1)
       else
         assert_kind_of(String, record["request_url_hierarchy_level0"])
       end
@@ -96,7 +103,9 @@ module ApiUmbrellaTestHelpers
       logged_url += "?#{record["request_url_query"]}" if(record["request_url_query"])
       assert_equal(expected_url, logged_url)
       if($config["elasticsearch"]["template_version"] < 2)
-        assert_equal(expected_url, record["request_url"])
+        assert_equal(expected_url, record.fetch("request_url"))
+      else
+        refute(record.key?("request_url"))
       end
     end
   end

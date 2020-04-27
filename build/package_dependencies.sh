@@ -2,18 +2,23 @@
 
 set -e -u
 
-# shellcheck disable=SC1091
-if [ -f /etc/os-release ]; then
-  source /etc/os-release
-fi
+source_dir="$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
 
-if [ -f /etc/redhat-release ]; then
-  util_linux_package="util-linux"
+# shellcheck source=tasks/helpers/detect_os_release.sh
+source "$source_dir/tasks/helpers/detect_os_release.sh"
+detect_os_release
+
+core_package_non_build_dependencies=()
+
+if [[ "$ID_NORMALIZED" == "rhel" ]]; then
+  perl_digest_md5_package="perl-Digest-MD5"
   procps_package="procps-ng"
+  util_linux_package="util-linux"
 
-  if [[ "${VERSION_ID:-}" == "6" ]]; then
-    util_linux_package="util-linux-ng"
+  if [[ "$VERSION_ID" == "6" ]]; then
+    perl_digest_md5_package="perl"
     procps_package="procps"
+    util_linux_package="util-linux-ng"
   fi
 
   core_package_dependencies=(
@@ -58,9 +63,6 @@ if [ -f /etc/redhat-release ]; then
     perl
     perl-Time-HiRes
 
-    # lua-icu-date
-    libicu-devel
-
     # nokogiri
     libxml2-devel
     libxslt-devel
@@ -96,8 +98,8 @@ if [ -f /etc/redhat-release ]; then
     unzip
     xz
 
-    # For "unbuffer" command for Taskfile.
-    expect
+    # For OpenResty's "opm" CLI.
+    "$perl_digest_md5_package"
   )
   test_build_dependencies=(
     # Binary and readelf tests
@@ -127,20 +129,31 @@ if [ -f /etc/redhat-release ]; then
     # For running lsof tests in Docker as root
     sudo
   )
-elif [ -f /etc/debian_version ]; then
+
+  # Install GCC 7+ for compiling TrafficServer (C++17 required).
+  if [[ "$VERSION_ID" == "6" || "$VERSION_ID" == "7" ]]; then
+    core_build_dependencies+=(
+      centos-release-scl
+      devtoolset-7
+    )
+  fi
+
+  # Install Python 2.7 for compiling ICU.
+  if [[ "$VERSION_ID" == "6" ]]; then
+    core_build_dependencies+=(
+      centos-release-scl
+      python27
+    )
+  fi
+elif [[ "$ID_NORMALIZED" == "debian" ]]; then
   libcurl_version=3
-  libtool_bin_package="libtool-bin"
   openjdk_version=8
 
   if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "18.04" ]]; then
     libcurl_version=4
   fi
 
-  if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "14.04" ]]; then
-    libtool_bin_package="libtool"
-  fi
-
-  if [[ "$ID" == "debian" && "$VERSION_ID" == "8" ]] || [[ "$ID" == "ubuntu" && "$VERSION_ID" == "14.04" ]]; then
+  if [[ "$ID" == "debian" && "$VERSION_ID" == "8" ]]; then
     openjdk_version=7
   fi
 
@@ -185,9 +198,6 @@ elif [ -f /etc/debian_version ]; then
     # For OpenResty's "resty" CLI.
     perl
 
-    # lua-icu-date
-    libicu-dev
-
     # nokogiri
     libxml2-dev
     libxslt-dev
@@ -209,7 +219,7 @@ elif [ -f /etc/debian_version ]; then
     libpcre3-dev
     libssl-dev
     libtool
-    "$libtool_bin_package"
+    libtool-bin
     libxml2-dev
     libyaml-dev
     lsb-release
@@ -223,9 +233,6 @@ elif [ -f /etc/debian_version ]; then
     unzip
     uuid-dev
     xz-utils
-
-    # For "unbuffer" command for Taskfile.
-    expect
   )
   test_build_dependencies=(
     # Binary and readelf tests
@@ -234,6 +241,7 @@ elif [ -f /etc/debian_version ]; then
 
     # For installing the mongo-orchestration test dependency.
     python-virtualenv
+    virtualenv
 
     # For checking for file descriptor leaks during the tests.
     lsof
@@ -256,8 +264,23 @@ elif [ -f /etc/debian_version ]; then
     sudo
   )
 
-  if [[ "$ID" != "ubuntu" || "$VERSION_ID" != "14.04" ]]; then
-    test_build_dependencies+=("virtualenv")
+  # Install GCC 7+ for compiling TrafficServer (C++17 required).
+  if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "16.04" ]]; then
+    core_build_dependencies+=(
+      gcc-7
+      g++-7
+    )
+  elif [[ "$ID" == "debian" && ( "$VERSION_ID" == "8" || "$VERSION_ID" == "9" ) ]]; then
+    core_build_dependencies+=(
+      clang-7
+      libc++-7-dev
+      libc++abi-7-dev
+    )
+
+    core_package_non_build_dependencies+=(
+      libc++1
+      libc++abi1
+    )
   fi
 else
   echo "Unknown build system"
@@ -274,3 +297,9 @@ all_dependencies=(
   "${all_build_dependencies[@]}"
   "${test_build_dependencies[@]}"
 )
+
+if [ "${#core_package_non_build_dependencies[@]}" != 0 ]; then
+  core_package_dependencies+=(
+    "${core_package_non_build_dependencies[@]}"
+  )
+fi

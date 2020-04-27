@@ -1,8 +1,8 @@
 [
   {
-    "id": "api-umbrella-log-v2-template",
+    "id": "{{elasticsearch.index_name_prefix}}-log-v2-template",
     "template": {
-      "template": "api-umbrella-logs-v2-*",
+      "template": "{{elasticsearch.index_name_prefix}}-logs-v2-*",
       "settings": {
         "index": {
           "number_of_shards": 1,
@@ -48,6 +48,9 @@
               "type": "keyword",
               "normalizer": "lowercase_normalizer"
             },
+            "imported": {
+              "type": "boolean"
+            },
             "request_accept": {
               "type": "keyword",
               "normalizer": "lowercase_normalizer"
@@ -71,10 +74,6 @@
               "type": "keyword",
               "normalizer": "lowercase_normalizer"
             },
-            "request_hierarchy": {
-              "type": "keyword",
-              "normalizer": "lowercase_normalizer"
-            },
             "request_host": {
               "type": "keyword",
               "normalizer": "lowercase_normalizer"
@@ -84,8 +83,7 @@
               "normalizer": "lowercase_normalizer"
             },
             "request_ip_city": {
-              "type": "keyword",
-              "normalizer": "lowercase_normalizer"
+              "type": "keyword"
             },
             "request_ip_country": {
               "type": "keyword",

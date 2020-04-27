@@ -39,9 +39,11 @@ if($!raw!request_connection != "") then {
 if($!raw!request_content_type != "") then {
   set $!usr!es!request_content_type = $!raw!request_content_type;
 }
+{{#elasticsearch._template_version_v1?}}
 if($!raw!request_url_hierarchy != "") then {
   set $!usr!es!request_hierarchy = $!raw!request_url_hierarchy;
 }
+{{/elasticsearch._template_version_v1?}}
 {{#elasticsearch._template_version_v2?}}
 if($!raw!request_url_hierarchy_level0 != "") then {
   set $!usr!es!request_url_hierarchy_level0 = $!raw!request_url_hierarchy_level0;
@@ -162,6 +164,9 @@ action(
   type="omelasticsearch"
   server="{{elasticsearch._first_server.host}}"
   serverport="{{elasticsearch._first_server.port}}"
+  {{#elasticsearch._first_server._https?}}
+  usehttps="on"
+  {{/elasticsearch._first_server._https?}}
   {{#elasticsearch._first_server.user}}
   uid="{{elasticsearch._first_server.user}}"
   {{/elasticsearch._first_server.user}}
@@ -170,7 +175,7 @@ action(
   {{/elasticsearch._first_server.password}}
   searchIndex="elasticsearch-index"
   dynSearchIndex="on"
-  searchType="log"
+  searchType="{{elasticsearch.index_mapping_type}}"
   template="elasticsearch-json-record"
 
   # Enable bulk indexing, so batches of records are sent as a single HTTP

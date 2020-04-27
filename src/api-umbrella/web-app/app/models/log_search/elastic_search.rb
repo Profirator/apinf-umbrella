@@ -1,7 +1,7 @@
 require("json")
 
 class LogSearch::ElasticSearch < LogSearch::Base
-  attr_reader :client
+  attr_reader :client, :drilldown_depth, :drilldown_parent
 
   def initialize(options = {})
     super
@@ -29,49 +29,73 @@ class LogSearch::ElasticSearch < LogSearch::Base
         { :request_at => :desc },
       ],
       :aggregations => {},
+      :size => 0,
     }
 
     @query_options = {
-      :size => 0,
       :ignore_unavailable => true,
       :allow_no_indices => true,
     }
 
+    if ApiUmbrellaConfig[:elasticsearch][:api_version] >= 7
+      @query[:track_total_hits] = true
+    end
+
     if(@options[:query_timeout])
-      @query_options[:timeout] = "#{@options[:query_timeout]}s"
+      @query[:timeout] = "#{@options[:query_timeout]}s"
     end
   end
 
   def result
-    if @none
-      raw_result = {
-        "hits" => {
-          "total" => 0,
-          "hits" => [],
-        },
-        "aggregations" => {},
-      }
-      @query[:aggregations].each_key do |aggregation_name|
-        raw_result["aggregations"][aggregation_name.to_s] ||= {}
-        raw_result["aggregations"][aggregation_name.to_s]["buckets"] = []
-        raw_result["aggregations"][aggregation_name.to_s]["doc_count"] = 0
-      end
-      @result = LogResult.factory(self, raw_result)
-      return @result
-    end
-
-    query_options = @query_options.merge({
-      :index => indexes.join(","),
-      :body => @query,
-    })
-
     # Starting in ElasticSearch 1.4, we need to explicitly remove the
     # aggregations if there aren't actually any present for scroll queries to
     # work.
-    if query_options[:body][:aggregations] && query_options[:body][:aggregations].blank?
-      query_options[:body].delete(:aggregations)
+    if @query[:aggregations] && @query[:aggregations].blank?
+      @query.delete(:aggregations)
     end
-    raw_result = @client.search(query_options)
+
+    # When querying many indices (particularly if partitioning by day), we can
+    # run into URL length limits with the default search approach, which
+    # requires the indices be in the URL:
+    # https://github.com/elastic/elasticsearch/issues/26360
+    #
+    # To sidestep this, we will perform most queries using the _msearch API,
+    # which allows us to put the index names in the POST body, so it's not
+    # subject to URL length limits.
+    #
+    # However, for scroll queries, the msearch API doesn't support this
+    # (https://github.com/elastic/elasticsearch-php/issues/478#issuecomment-254321873),
+    # so we must revert back to normal search mode for these queries. In the
+    # event the URL length is too long, then we handle these scroll queries by
+    # querying all indices using a wildcard. While slightly less efficient, this
+    # should be better optimized in Elasticsearch 5+
+    # (https://www.elastic.co/blog/instant-aggregations-rewriting-queries-for-fun-and-profit).
+    indices = indexes.join(",")
+    if @query_options[:scroll]
+      # The default URL length limit for Elasticsearch is 4096 bytes, but
+      # reduce the limit before truncating to the wildcard index name so
+      # there's still room for other query params.
+      if indices.length > 3700
+        indices = "#{ApiUmbrellaConfig[:elasticsearch][:index_name_prefix]}-logs-*"
+      end
+
+      raw_result = @client.search(@query_options.merge({
+        :index => indices,
+        :body => @query,
+      }))
+    else
+      query_options = @query_options.deep_dup.merge({
+        :index => indices,
+      })
+      raw_result = @client.msearch(:body => [query_options, @query])
+      if raw_result["responses"] && raw_result["responses"][0]
+        raw_result = raw_result["responses"][0]
+        if raw_result["_shards"] && raw_result["_shards"]["failures"].present?
+          raise "Unsuccessful response"
+        end
+      end
+    end
+
     if(raw_result["timed_out"])
       # Don't return partial results.
       raise "Elasticsearch request timed out"
@@ -96,7 +120,7 @@ class LogSearch::ElasticSearch < LogSearch::Base
 
   def search_type!(search_type)
     if(search_type == "count")
-      @query_options[:size] = 0
+      @query[:size] = 0
     end
   end
 
@@ -229,11 +253,11 @@ class LogSearch::ElasticSearch < LogSearch::Base
   end
 
   def offset!(from)
-    @query_options[:from] = from
+    @query[:from] = from
   end
 
   def limit!(size)
-    @query_options[:size] = size
+    @query[:size] = size
   end
 
   def sort!(sort)
@@ -294,28 +318,62 @@ class LogSearch::ElasticSearch < LogSearch::Base
   end
 
   def aggregate_by_drilldown!(prefix, size = nil)
+    prefix_parts = prefix.split("/")
+    @drilldown_prefix = prefix
+    @drilldown_depth = prefix[0].to_i
+    @drilldown_parent = []
+    @drilldown_path_segments = []
+
+    prefix_parts.each_with_index do |value, index|
+      if index > 0
+        @drilldown_path_segments << {
+          :level => index - 1,
+          :value => value,
+        }
+
+        if index <= @drilldown_depth
+          @drilldown_parent << value
+        end
+      end
+    end
+    @drilldown_parent = File.join(@drilldown_parent)
+    if @drilldown_parent == ""
+      @drilldown_parent = nil
+    end
+
     size ||= 1_000_000
     @query[:aggregations][:drilldown] = {
       :terms => {
-        :field => "request_hierarchy",
         :size => size,
-        :include => "#{Regexp.escape(prefix)}.*",
       },
     }
+
+    if ApiUmbrellaConfig[:elasticsearch][:template_version] < 2
+      @query[:query][:bool][:filter][:bool][:must] << {
+        :prefix => {
+          :request_hierarchy => @drilldown_prefix,
+        },
+      }
+
+      @query[:aggregations][:drilldown][:terms][:field] = "request_hierarchy"
+      @query[:aggregations][:drilldown][:terms][:include] = "#{Regexp.escape(@drilldown_prefix)}.*"
+    else
+      @drilldown_path_segments.each do |segment|
+        @query[:query][:bool][:filter][:bool][:must] << {
+          :term => {
+            "request_url_hierarchy_level#{segment[:level]}" => "#{segment[:value]}/",
+          },
+        }
+      end
+
+      @query[:aggregations][:drilldown][:terms][:field] = "request_url_hierarchy_level#{@drilldown_depth}"
+    end
   end
 
-  def aggregate_by_drilldown_over_time!(prefix)
-    @query[:query][:bool][:filter][:bool][:must] << {
-      :prefix => {
-        :request_hierarchy => prefix,
-      },
-    }
-
+  def aggregate_by_drilldown_over_time!
     @query[:aggregations][:top_path_hits_over_time] = {
       :terms => {
-        :field => "request_hierarchy",
         :size => 10,
-        :include => "#{Regexp.escape(prefix)}.*",
       },
       :aggregations => {
         :drilldown_over_time => {
@@ -333,6 +391,13 @@ class LogSearch::ElasticSearch < LogSearch::Base
         },
       },
     }
+
+    if ApiUmbrellaConfig[:elasticsearch][:template_version] < 2
+      @query[:aggregations][:top_path_hits_over_time][:terms][:field] = "request_hierarchy"
+      @query[:aggregations][:top_path_hits_over_time][:terms][:include] = "#{Regexp.escape(@drilldown_prefix)}.*"
+    else
+      @query[:aggregations][:top_path_hits_over_time][:terms][:field] = "request_url_hierarchy_level#{@drilldown_depth}"
+    end
 
     @query[:aggregations][:hits_over_time] = {
       :date_histogram => {
@@ -485,12 +550,31 @@ class LogSearch::ElasticSearch < LogSearch::Base
     # no-op: Method needed for SQL adapters only.
   end
 
+  def none!
+    @query[:query][:bool][:filter][:bool][:must] << {
+      :bool => {
+        :must_not => {
+          :match_all => {},
+        },
+      },
+    }
+  end
+
   private
 
   def indexes
     unless @indexes
+      partition_date_format = case ApiUmbrellaConfig[:elasticsearch][:index_partition]
+      when "monthly"
+        "%Y-%m"
+      when "daily"
+        "%Y-%m-%d"
+      else
+        raise "Unknown elasticsearch.index_partition configuration value"
+      end
+
       date_range = @start_time.utc.to_date..@end_time.utc.to_date
-      @indexes = date_range.map { |date| "api-umbrella-logs-#{date.strftime("%Y-%m")}" }
+      @indexes = date_range.map { |date| "#{ApiUmbrellaConfig[:elasticsearch][:index_name_prefix]}-logs-#{date.strftime(partition_date_format)}" }
       @indexes.uniq!
     end
 

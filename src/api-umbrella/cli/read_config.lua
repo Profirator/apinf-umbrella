@@ -311,9 +311,17 @@ local function set_computed_config()
           end
         end
 
+        if parsed["scheme"] == "https" then
+          parsed["_https?"] = true
+        end
+
         table.insert(config["elasticsearch"]["_servers"], parsed)
       end
     end
+  end
+
+  if config["elasticsearch"]["api_version"] >= 7 then
+    config["elasticsearch"]["index_mapping_type"] = "_doc"
   end
 
   if not config["analytics"]["outputs"] then
@@ -425,6 +433,8 @@ local function set_computed_config()
           logs = path.join(config["log_dir"], "elasticsearch"),
         },
       },
+      ["_index_partition_monthly?"] = (config["elasticsearch"]["index_partition"] == "monthly"),
+      ["_index_partition_daily?"] = (config["elasticsearch"]["index_partition"] == "daily"),
       ["_template_version_v1?"] = (config["elasticsearch"]["template_version"] == 1),
       ["_template_version_v2?"] = (config["elasticsearch"]["template_version"] == 2),
       ["_api_version_lte_2?"] = (config["elasticsearch"]["api_version"] <= 2),

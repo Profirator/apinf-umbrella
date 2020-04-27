@@ -19,10 +19,6 @@
 #   libmaxminddb dependency changes, rebuilding it properly cascades and
 #   triggers a rebuild of openresty (1st level dependency) and luarocks (2nd
 #   level dependency).
-# - For colorized output we use the "unbuffer" tool to force color output on
-#   some commands, since Task doesn't easily support detecting colorized output
-#   (as of the output changes in 2.0.3):
-#   https://github.com/go-task/task/issues/136
 
 version: "2"
 
@@ -51,6 +47,16 @@ tasks:
     generates:
       - ./build/work/stamp/deps/geolitecity
     method: none
+
+  deps:icu4c:
+    cmds:
+      - ./tasks/deps/icu4c
+    sources:
+      - ./tasks/deps/icu4c
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/deps/icu4c
+    method: checksum
 
   deps:libcidr:
     cmds:
@@ -203,6 +209,7 @@ tasks:
     cmds:
       - task: deps:bundler
       - task: deps:geolitecity
+      - task: deps:icu4c
       - task: deps:libcidr
       - task: deps:luarocks
       - task: deps:mora
@@ -281,17 +288,18 @@ tasks:
       - ./build/work/stamp/app-deps/lua/cmsgpack
     method: checksum
 
-  app-deps:lua:icu-date:
-    deps:
-      - deps:luarocks
+  app-deps:lua:icu-date-ffi:
     cmds:
-      - ./tasks/app-deps/lua/icu-date
+      - task: deps:icu4c
+      - task: deps:luarocks
+      - ./tasks/app-deps/lua/icu-date-ffi
     sources:
+      - ./build/work/stamp/deps/icu4c
       - ./build/work/stamp/deps/luarocks
-      - ./tasks/app-deps/lua/icu-date
+      - ./tasks/app-deps/lua/icu-date-ffi
       - ./tasks/helpers.sh
     generates:
-      - ./build/work/stamp/app-deps/lua/icu-date
+      - ./build/work/stamp/app-deps/lua/icu-date-ffi
     method: checksum
 
   app-deps:lua:inspect:
@@ -499,7 +507,7 @@ tasks:
       - task: app-deps:admin-ui:yarn
       - task: app-deps:lua:argparse
       - task: app-deps:lua:cmsgpack
-      - task: app-deps:lua:icu-date
+      - task: app-deps:lua:icu-date-ffi
       - task: app-deps:lua:inspect
       - task: app-deps:lua:libcidr-ffi
       - task: app-deps:lua:luaposix
@@ -612,6 +620,36 @@ tasks:
       - ./build/work/stamp/test-deps/bundle
     method: checksum
 
+  test-deps:elasticsearch5:
+    cmds:
+      - ./tasks/test-deps/elasticsearch5
+    sources:
+      - ./tasks/test-deps/elasticsearch5
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/test-deps/elasticsearch5
+    method: checksum
+
+  test-deps:elasticsearch6:
+    cmds:
+      - ./tasks/test-deps/elasticsearch6
+    sources:
+      - ./tasks/test-deps/elasticsearch6
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/test-deps/elasticsearch6
+    method: checksum
+
+  test-deps:elasticsearch7:
+    cmds:
+      - ./tasks/test-deps/elasticsearch7
+    sources:
+      - ./tasks/test-deps/elasticsearch7
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/test-deps/elasticsearch7
+    method: checksum
+
   test-deps:lua:luacheck:
     deps:
       - deps:luarocks
@@ -691,6 +729,9 @@ tasks:
   test-deps:
     cmds:
       - task: test-deps:bundle
+      - task: test-deps:elasticsearch5
+      - task: test-deps:elasticsearch6
+      - task: test-deps:elasticsearch7
       - task: test-deps:lua:luacheck
       - task: test-deps:lua:penlight
       - task: test-deps:mailhog
@@ -703,31 +744,31 @@ tasks:
     deps:
       - app-deps:admin-ui:yarn
     cmds:
-      - unbuffer ./tasks/lint/js
+      - ./tasks/lint/js
 
   lint:lua:
     deps:
       - test-deps:lua:luacheck
     cmds:
-      - unbuffer ./tasks/lint/lua
+      - ./tasks/lint/lua
 
   lint:resty:
     deps:
       - test-deps:lua:penlight
     cmds:
-      - unbuffer ./tasks/lint/resty/run
+      - ./tasks/lint/resty/run
 
   lint:ruby:
     deps:
       - test-deps:bundle
     cmds:
-      - unbuffer ./tasks/lint/ruby
+      - ./tasks/lint/ruby
 
   lint:shell:
     deps:
       - test-deps:shellcheck
     cmds:
-      - unbuffer ./tasks/lint/shell
+      - ./tasks/lint/shell
 
   lint:
     cmds:
@@ -739,7 +780,21 @@ tasks:
 
   outdated:
     cmds:
-      - unbuffer ./tasks/outdated
+      - ./tasks/outdated
+
+  test:
+    deps:
+      - all
+      - test-deps
+    cmds:
+      - ./tasks/test/default
+
+  test:circle-ci:
+    deps:
+      - all
+      - test-deps
+    cmds:
+      - ./tasks/test/circle-ci
 
   clean:dev:
     cmds:
