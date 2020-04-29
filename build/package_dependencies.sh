@@ -5,8 +5,28 @@ set -e -u
 source_dir="$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")"
 
 # shellcheck source=tasks/helpers/detect_os_release.sh
-source "$source_dir/tasks/helpers/detect_os_release.sh"
-detect_os_release
+#source "$source_dir/tasks/helpers/detect_os_release.sh"
+#detect_os_release
+  if [ -f /etc/os-release ]; then
+    # shellcheck disable=SC1091
+    source /etc/os-release
+  elif [ -f /etc/redhat-release ]; then
+    if [ -f /etc/centos-release ]; then
+      ID="centos"
+      ID_LIKE="rhel fedora"
+    else
+      ID="rhel"
+      ID_LIKE="fedora"
+    fi
+
+    VERSION_ID="$(grep -oP '(?<= )[0-9]+(?=\.)' /etc/redhat-release)"
+  fi
+
+  if [[ "$ID" == "rhel" || " ${ID_LIKE:-} " == *" rhel "* ]]; then
+    ID_NORMALIZED="rhel"
+  elif [[ "$ID" == "debian" || " ${ID_LIKE:-} " == *" debian "* ]]; then
+    ID_NORMALIZED="debian"
+  fi
 
 core_package_non_build_dependencies=()
 
