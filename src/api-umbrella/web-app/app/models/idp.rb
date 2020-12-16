@@ -19,11 +19,7 @@ class Idp
   validates :type,
     :inclusion => { :in => ["keycloak", "keyrock"] }
   validates :endpoint,
-    :presence => true,
-    :format => {
-      :with => CommonValidations::HOST_FORMAT_WITH_WILDCARD,
-      :message => :invalid_host_format,
-    }
+    :presence => true
 
   def self.sorted
     order_by(:endpoint.asc)

@@ -1,8 +1,11 @@
 local cjson = require "cjson"
 local config = require "api-umbrella.proxy.models.file_config"
 local jwt = require "resty.jwt"
+local mongo = require "api-umbrella.utils.mongo"
 local http = require "resty.http"
+local utils = require "api-umbrella.proxy.utils"
 local _M = {}
+
 
 local function get_idm_user_info(token, dict)
     local idp_host, result, res, err, rpath, resource, method
@@ -61,10 +64,10 @@ local function get_idm_user_info(token, dict)
         result = cjson.decode(body)
 
         if idp_back_name == "fiware-oauth2" then
-	    -- In authorization mode, first evaluate authorization_decision flag
-	    if mode == "authorization" and result["authorization_decision"] ~= "Permit" then
-	       return nil, " Authorization denied"
-	    end
+	        -- In authorization mode, first evaluate authorization_decision flag
+	        if mode == "authorization" and result["authorization_decision"] ~= "Permit" then
+	            return nil, " Authorization denied"
+	        end
 
             -- Process organization info to generate organization scope roles
             if result["organizations"] ~= nil then
@@ -74,7 +77,7 @@ local function get_idm_user_info(token, dict)
                         local role_name = org["id"] .. "."
                         role_name = role_name .. org_role["name"]
 
-                        ngx.log(ngx.INFO, "Generated org role: ", role_name)
+                        ngx.log(ngx.ERR, "Generated org role: ", role_name)
                         result["roles"][#result["roles"] + 1] = role_name
                     end
                 end
@@ -85,38 +88,245 @@ local function get_idm_user_info(token, dict)
     return result, err
 end
 
-local function get_jwt_user_info(token, dict)
-    local result, err
+local function decode_jwt(token, key)
+    -- Parse the JWT token
+    local decoded_token = jwt:verify(key, token)
+
+    if not decoded_token["valid"] then
+        return nil, "The provided JWT is not valid"
+    end
+
+    return decoded_token["payload"], nil
+end
+
+local function build_keycloak_role_mapping(parsed_token, dict)
+    local result = {}
+
+    result["email"] = parsed_token["email"]
+    result["roles"] = {}
+
+    -- Load roles info
+    if parsed_token["realm_access"] ~= nil then
+        for _, role in ipairs(parsed_token["realm_access"]["roles"]) do
+            ngx.log(ngx.ERR, "Generated realm role: ", role_name)
+
+            result["roles"][#result["roles"] + 1] = "realm."..role
+        end
+    end
+
+    if parsed_token["resource_access"][dict["app_id"]] ~= nil then
+        for _, role in ipairs(parsed_token["resource_access"][dict["app_id"]]["roles"]) do
+            result["roles"][#result["roles"] + 1] = role
+        end
+    end
+    return result
+end
+
+local function build_fiware_role_mapping(parsed_token, dict)
+    local result = {}
+    -- Check how a Keyrock JWT looks like
+    -- TODO: Validation of app id only for non external
+    result["email"] = parsed_token["email"]
+    result["roles"] = {}
+
+    -- Process user roles
+    for _, role in ipairs(parsed_token["roles"]) do
+        result["roles"][#result["roles"] + 1] = role["name"]
+    end
+
+    -- Process organization info to generate organization scope roles
+    if parsed_token["organizations"] ~= nil then
+        for _, org in ipairs(parsed_token["organizations"]) do
+            for _, org_role in ipairs(org["roles"]) do
+                -- Generate organization role
+                local role_name = org["id"] .. "."
+                role_name = role_name .. org_role["name"]
+
+                ngx.log(ngx.ERR, "Generated org role: ", role_name)
+                result["roles"][#result["roles"] + 1] = role_name
+            end
+        end
+    end
+
+    return result
+end
+
+local function get_fiware_organization_roles(dict, organization_id)
+    -- Get Keyrock admin token
+    local idp_host = dict["idp"]["host"]
+    local admin_user = dict["idp"]["admin_user"]
+    local admin_cred = dict["idp"]["admin_credentials"]
+
+    local ssl = false
+    if config["nginx"]["lua_ssl_trusted_certificate"] then
+        ssl=true
+    end
+
+    local headers = {}
+    headers["content-type"] = "application/json"
+
+    local token_body = {}
+    token_body["name"] = admin_user
+    token_body["password"] = admin_cred
+
+    local httpc = http.new()
+    httpc:set_timeout(45000)
+
+    ngx.log(ngx.ERR, "IDM URL ----->: ", idp_host.."/v1/auth/tokens")
+    ngx.log(ngx.ERR, "IDM REQ ----->: ", cjson.encode(token_body))
+    res, err =  httpc:request_uri(idp_host.."/v1/auth/tokens", {
+        method = "POST",
+        headers = headers,
+        body = cjson.encode(token_body),
+        ssl_verify = ssl
+    })
+
+    ngx.log(ngx.ERR, "IDM Resp ----->: ", res.status)
+    ngx.log(ngx.ERR, "IDM Resp Body ----->: ", res.body)
+    if not res or (res.status ~= 200 and res.status ~= 201) then
+        return nil, 'Error accessing fiware IDM'
+    end
+
+    -- Get token from res
+    local api_token
+    for k,v in pairs(res.headers) do
+        if string.lower(k) == "x-subject-token" then
+            api_token = v
+        end
+    end
+
+    -- Get organization role mapping
+    local org_mapping_url = "/v1/applications/"..dict["app_id"].."/organizations/"..organization_id.."/roles"
+    headers = {}
+    headers['x-auth-token'] = api_token
+
+    ngx.log(ngx.ERR, "IDM URL ----->: ", idp_host..org_mapping_url)
+    res, err =  httpc:request_uri(idp_host..org_mapping_url, {
+        method = "GET",
+        headers = headers,
+        ssl_verify = ssl,
+    })
+
+    ngx.log(ngx.ERR, "IDM Resp ----->: ", res.status)
+    ngx.log(ngx.ERR, "IDM Resp Body ----->: ", res.body)
+    if not res or (res.status ~= 200 and res.status ~= 201) then
+        return nil, 'Error accessing fiware IDM'
+    end
+
+    -- Build role name array
+    local role_mapping = cjson.decode(res.body)
+    local org_roles = {}
+
+    for i, role in ipairs(role_mapping["role_organization_assignments"]) do
+        -- Get role info
+        local role_path = "/v1/applications/"..dict["app_id"].."/roles/"..role["role_id"]
+        res, err =  httpc:request_uri(idp_host..role_path, {
+            method = "GET",
+            headers = headers,
+            ssl_verify = ssl,
+        })
+    
+        if not res or (res.status ~= 200 and res.status ~= 201) then
+            return nil, 'Error accessing fiware IDM'
+        end
+
+        ngx.log(ngx.ERR, "IDM Resp Body ----->: ", res.body)
+        local role_info = cjson.decode(res.body)
+        org_roles[i] = role_info["role"]["name"]
+    end
+
+    ngx.log(ngx.ERR, "IDM DONE", "")
+    return org_roles, nil
+end
+
+local function get_ext_provider_user_info(token, dict)
+    local result, err, raw_idp, idp, parsed_token
     local idp_back_name = dict["idp"]["backend_name"]
 
+    -- Check that the ext provider feature is supported
+    if idp_back_name ~= "fiware-oauth2" or not dict["idp"]["jwt_enabled"] then
+        -- TODO: Support Keycloak as external IDP
+        return nil, "The external IDP feature is only enabled for FIWARE IDP with JWT enabled"
+    end
+
+    -- Search for IDP config in the database
+    raw_idp, db_err = mongo.first("idps", {
+        query = {
+            endpoint = dict["key_auth_provider"]
+        },
+    })
+
+    if not raw_idp then
+        return nil, "IDP provider not found"
+    end
+
+    idp = utils.pick_where_present(raw_idp, {
+        "endpoint",
+        "secret",
+        "organization_id"
+    })
+
+    ngx.log(ngx.ERR, "==== IDP ====", idp['organization_id'])
+
+    -- Validate JWT using external secret
+    parsed_token, err = decode_jwt(token, idp['secret'])
+
+    -- Get fiware organization roles
+    local org_roles
+    org_roles, err = get_fiware_organization_roles(dict, idp['organization_id'])
+
+    if err ~= nil then
+        return nil, err
+    end
+
+    -- Validate that user roles could be assigned
+    local invalid_role = nil
+    for _, role in ipairs(parsed_token['roles']) do
+        local found = false
+        for _, org_role in ipairs(org_roles) do
+            found = org_role == role["name"]
+        end
+        if not found then
+            invalid_role = role["name"]
+        end
+    end
+
+    if invalid_role ~= nil then
+        ngx.log(ngx.ERR, "INVALID ROLE", invalid_role)
+        return nil, 'You are not authorized to map ' .. invalid_role
+    end
+
+    -- Return efective role mapping
+    result = build_fiware_role_mapping(parsed_token, dict)
+
+    return result, err
+end
+
+local function get_jwt_user_info(token, dict)
+    local result, err, parsed_token
+    local idp_back_name = dict["idp"]["backend_name"]
+
+    ngx.log(ngx.ERR, "New request with JWT", token)
+
+    -- Secrets are generated by app in Keyrock
+    -- TODO: For now we can keep the secret being part of the configuration
+    parsed_token, err = decode_jwt(token, dict["idp"]["key"])
+
+    ngx.log(ngx.ERR, "Token parsed", token)
+    if err ~= nil then
+        ngx.log(ngx.ERR, "Token parsed error", err)
+        return nil, err
+    end
+
     if idp_back_name == "keycloak-oauth2" then
-        -- Parse the JWT token
-        local decoded_token = jwt:verify(dict["idp"]["key"], token)
-
-        if not decoded_token["valid"] then
-            return nil, "The provided JWT is not valid"
+        result = build_keycloak_role_mapping(parsed_token, dict)
+    elseif idp_back_name == "fiware-oauth2" then
+        -- Check if the request is in the correct scope
+        if dict["app_id"] ~= parsed_token["app_id"] then
+            return nil, "Invalid scope for access token"
         end
-
-        local parsed_token = decoded_token["payload"]
-        result = {}
-
-        result["email"] = parsed_token["email"]
-        result["roles"] = {}
-
-        -- Load roles info
-        if parsed_token["realm_access"] ~= nil then
-            for _, role in ipairs(parsed_token["realm_access"]["roles"]) do
-                ngx.log(ngx.INFO, "Generated realm role: ", role_name)
-
-                result["roles"][#result["roles"] + 1] = "realm."..role
-            end
-        end
-
-        if parsed_token["resource_access"][dict["app_id"]] ~= nil then
-            for _, role in ipairs(parsed_token["resource_access"][dict["app_id"]]["roles"]) do
-                result["roles"][#result["roles"] + 1] = role
-            end
-        end
+        ngx.log(ngx.ERR, "Mapping roles", err)
+        result = build_fiware_role_mapping(parsed_token, dict)
     end
 
     return result, err
@@ -132,10 +342,18 @@ function _M.first(dict)
     local token = dict["key_value"]
     local result, err
 
-    if not dict["idp"]["jwt_enabled"] then
-        result, err = get_idm_user_info(token, dict)
+    -- Check if the request is made by an external IDM
+    ngx.log(ngx.ERR, "------- ", dict["key_auth_provider"])
+    if dict["key_auth_provider"] ~= nil then
+        ngx.log(ngx.ERR, "External provider found: ", dict["key_auth_provider"])
+        result, err = get_ext_provider_user_info(token, dict)
     else
-        result, err = get_jwt_user_info(token, dict)
+        -- Using local IDP, so using local configuration
+        if not dict["idp"]["jwt_enabled"] then
+            result, err = get_idm_user_info(token, dict)
+        else
+            result, err = get_jwt_user_info(token, dict)
+        end
     end
 
     return result, err
