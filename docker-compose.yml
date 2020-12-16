@@ -1,28 +1,42 @@
-version: "3"
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile-dev
-    volumes:
-      - .:/app
-      - build_cache:/build
-    environment:
-      HTTP_PORT: 8888
-      HTTPS_PORT: 8443
-    ports:
-      - "8888:8888"
-      - "8443:8443"
-    networks:
-      main:
-        aliases:
-          - umbrella.docker
+version: "3.5"
 
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=0
-networks: 
+services:
+    mongo:
+        image: mongo:3.6
+        networks:
+            main:
+              aliases:
+                - mongodb.docker
+        volumes:
+            - ./mongo-data:/data/db
+
+    umbrella_elasticsearch:
+        image: elasticsearch:2.4
+        volumes:
+            - ./umbrella-elasticsearch:/usr/share/elasticsearch/data
+        command: elasticsearch -Des.index.max_result_window=50000
+        networks:
+            main:
+              aliases:
+                - elasticsearch.docker
+
+    umbrella:
+        # Image build with Dockerfile-build or Dockerfile-dev-build
+        image: fiware/api-umbrella:0.15.3-dev
+        depends_on:
+            - mongo
+            - umbrella_elasticsearch
+        ports:
+            - 8443:8443
+        volumes:
+          - ./dep-config:/etc/api-umbrella
+          # Mount the source code to allow live software updates while developing
+          - ./src/:/app/src
+        networks:
+            main:
+              aliases:
+                - umbrella.docker
+
+networks:
   main:
     external: true
-
-volumes:
-  build_cache:
