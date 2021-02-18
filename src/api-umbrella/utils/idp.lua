@@ -64,6 +64,8 @@ local function get_idm_user_info(token, dict)
 	    -- In authorization mode, first evaluate authorization_decision flag
 	    if mode == "authorization" and result["authorization_decision"] ~= "Permit" then
 	       return nil, " Authorization denied"
+            elseif mode == "authorization" and result["authorization_decision"] == "Permit" then
+               return result
 	    end
 
             -- Process organization info to generate organization scope roles
