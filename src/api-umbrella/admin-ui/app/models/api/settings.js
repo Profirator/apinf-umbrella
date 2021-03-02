@@ -15,6 +15,7 @@ export default DS.Model.extend({
   requireHttps: DS.attr(),
   disableApiKey: DS.attr(),
   apiKeyVerificationLevel: DS.attr(),
+  authMode: DS.attr(),
   requiredRoles: DS.attr(),
   requiredRolesOverride: DS.attr(),
   allowedIps: DS.attr(),
@@ -52,6 +53,10 @@ export default DS.Model.extend({
 
     if(this.apiKeyVerificationLevel === undefined) {
       this.set('apiKeyVerificationLevel', null);
+    }
+
+    if(this.authMode === undefined) {
+      this.set('authMode', null);
     }
 
     if(this.rateLimitMode === undefined) {

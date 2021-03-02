@@ -101,6 +101,7 @@ class Api::V1::ApisController < Api::V1::BaseController
       :pass_api_key_header,
       :pass_api_key_query_param,
       :rate_limits,
+      :auth_mode,
       :required_roles,
       :required_roles_override,
       :headers,

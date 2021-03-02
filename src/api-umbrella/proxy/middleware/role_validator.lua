@@ -10,6 +10,11 @@ return function(settings, user)
   if is_empty(required_roles) then
     return nil
   end
+  if settings and settings["auth_mode"] and settings["auth_mode"] ~= nil then
+     ngx.log(ngx.ERR, "[DEBUG] Skipping role based validation")
+     return nil
+  end
+  ngx.log(ngx.ERR, "[DEBUG] Performing role based validation")
 
   local authenticated = false
   if user then

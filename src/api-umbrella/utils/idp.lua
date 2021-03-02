@@ -252,7 +252,8 @@ local function get_ext_provider_user_info(token, dict)
     -- Search for IDP config in the database
     raw_idp, db_err = mongo.first("idps", {
         query = {
-            endpoint = dict["key_auth_provider"]
+	   endpoint = dict["key_auth_provider"],
+	   deleted_at = nil
         },
     })
 
@@ -302,8 +303,38 @@ local function get_ext_provider_user_info(token, dict)
     return result, err
 end
 
+local function get_jwt_policies_user_info(token, dict)
+   -- CB-attr based auth user info from JWT
+   local result = {}
+   local err, parsed_token
+   
+   -- Decode JWT without validation
+   local decoded_token = jwt:load_jwt(token)
+   
+   if not decoded_token["valid"] then
+      return nil, "The provided JWT is not valid"
+   end
+   
+   parsed_token = decoded_token["payload"]
+      
+   result["email"] = parsed_token["email"]
+   result["iss"] = parsed_token["iss"]
+   result["sub"] = parsed_token["sub"]
+   result["aud"] = parsed_token["aud"]
+   if parsed_token["authorisationRegistry"] then
+      result["authorisation_registry"] = parsed_token["authorisationRegistry"]
+   end
+   if parsed_token["delegationEvidence"] then
+      result["delegation_evidence"] = parsed_token["delegationEvidence"]
+   end
+   -- result["roles"] = {}
+   
+   return result, err 
+end
+
 local function get_jwt_user_info(token, dict)
     local result, err, parsed_token
+
     local idp_back_name = dict["idp"]["backend_name"]
 
     ngx.log(ngx.ERR, "New request with JWT", token)
@@ -347,6 +378,9 @@ function _M.first(dict)
     if dict["key_auth_provider"] ~= nil then
         ngx.log(ngx.ERR, "External provider found: ", dict["key_auth_provider"])
         result, err = get_ext_provider_user_info(token, dict)
+    elseif string.find(dict["mode"], "cb_attr") then
+       -- CB-attribute based authorization without external IDP, but external registry and policies
+       result, err = get_jwt_policies_user_info(token, dict)
     else
         -- Using local IDP, so using local configuration
         if not dict["idp"]["jwt_enabled"] then
