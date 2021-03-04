@@ -25,7 +25,7 @@ local function get_idm_user_info(token, dict)
     elseif idp_back_name == "fiware-oauth2" and mode == "authorization" then
         rpath = "/user"
         idp_host = dict["idp"]["host"]
-        resource = ngx.ctx.uri
+        resource = ngx.var.request_uri
         method = ngx.ctx.request_method
         rquery = "access_token="..token.."&app_id="..app_id.."&resource="..resource.."&action="..method
     elseif idp_back_name == "fiware-oauth2" and mode == "authentication" then
