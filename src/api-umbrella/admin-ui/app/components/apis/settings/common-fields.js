@@ -43,7 +43,7 @@ export default Component.extend({
     // { id: null, name: 'Default: Role based' },
     this.authModeOptions = [
       { id: null, name: 'Default: Role based' },
-      { id: 'cb_attr_auto', name: 'Context Broker attribute based (automatically)' }
+      { id: 'cb_attr_ishare_auto', name: 'Context Broker attribute based - iSHARE compliant (automatically)' }
     ];
   },
 });

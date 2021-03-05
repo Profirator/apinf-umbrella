@@ -10,6 +10,13 @@ local split = plutils.split
 local is_empty = types.is_empty
 local cjson = require "cjson"
 
+-- Get entity type from entity ID
+-- Requires Entity ID in this format: urn:XXX:<TYPE>:XXX
+local function get_type_from_entity_id(entity_id)
+   entity_type = string.match(entity_id, "urn:.+:(.+):.+")
+   return entity_type
+end
+
 -- Extract the policy parameters from the URI
 local function get_policy_parameters(method)
    local entity_type = ""
@@ -17,23 +24,20 @@ local function get_policy_parameters(method)
    local attrs = {}
    
    -- Check method
-   if not (method == "PATCH") then -- or method == "GET") then
+   if not (method == "PATCH" or method == "GET") then
       return nil, nil, nil, "HTTP method "..method.." not supported for CB attribute based authorisation"
    end
 
-   -- Get request URI
-   local in_uri = ngx.var.request_uri
+   -- Get request URI and strip query args
+   --local in_uri = ngx.var.request_uri
+   local in_uri = string.gsub(ngx.var.request_uri, "?.*", "")
 
-   -- Get request body
+   -- Get request body, args and headers
    ngx.req.read_body()
    local body_data = ngx.req.get_body_data()
-   if body_data and string.len(body_data) > 0 then
-      ngx.log(ngx.ERR, "[DEBUG] Request body data: ", body_data)
-      local eJson = cjson.encode(body_data)
-      local dJson = cjson.decode(eJson) 
-      local d2Json = cjson.decode(dJson) -- TODO: Failure here if not JSON!!!
-      ngx.log(ngx.ERR, "[DEBUG] Request body data (encoded): ", cjson.encode(d2Json))
-   end
+   local post_args = ngx.req.get_post_args()
+   local uri_args = ngx.req.get_uri_args()
+   local req_headers = ngx.req.get_headers()
 
    if method == "PATCH" then
       -- PATCH request for updating entity attributes
@@ -42,21 +46,37 @@ local function get_policy_parameters(method)
       if not check then
 	 return nil, nil, nil, "No NGSI-LD compliant PATCH request"
       end
+      -- TODO: Implement batch update via ngsi-ld/v1/entityOperations/upsert and ngsi-ld/v1/entityOperations/update
 
       -- Get entity ID
       local entity_id = string.match(in_uri, ".*/entities/(.+)/attrs.*")
+      if not entity_id or not (string.len(entity_id) > 0) then
+	 -- No entity specified, throw error
+	 return nil, nil, nil, "No entity ID specified for PATCH request"
+      end
       table.insert(entities, entity_id)
 
       -- Get entity type
-      entity_type = string.match(entity_id, "urn:.+:(.+):.+")
+      entity_type = get_type_from_entity_id(entity_id)
+      if not entity_type or not (string.len(entity_type) > 0) then
+	 return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
+      end
       
       -- Get attribute from URI
       local attr = string.match(in_uri, ".*/attrs/(.*)")
       if attr and string.len(attr) > 0 then
 	 table.insert(attrs, attr)
+      elseif req_headers and req_headers["Content-Type"] and req_headers["Content-Type"] == "application/json" then
+	 -- Get attributes from body, if specified and not in URI
+	 local body_json = cjson.decode(body_data)
+	 ngx.log(ngx.ERR, "[DEBUG] PATCH Request body data (decoded): ", cjson.encode(body_json))
+	 for index, value in pairs(body_json) do
+	    table.insert(attrs, index)
+	 end
       end
       
-      -- TODO: Get attributes also from body
+      
+      
 
       return entity_type, entities, attrs, nil
    elseif method == "GET" then
@@ -68,19 +88,36 @@ local function get_policy_parameters(method)
       end
 
       -- Get entity ID
-      local entity_id = string.match(in_uri, ".*/entities/(.+)/attrs.*")
-      if not entity_id then
+      local entity_id = string.match(in_uri, ".*/entities/([^/.]+)")
+      if not entity_id or not (string.len(entity_id) > 0) then
 	 -- No entity specified, requesting all entities
 	 entity_id = "*"
       end
       table.insert(entities, entity_id)
+
+      -- Get entity type if specified
+      -- Otherwise use wildcard 
+      entity_type = "*"
+      if uri_args and uri_args["type"] then
+	 entity_type = uri_args["type"]
+      elseif post_args and post_args["type"] then
+	 entity_type = post_args["type"]
+      elseif entity_id ~= "*" then
+	 entity_type = get_type_from_entity_id(entity_id)
+	 if not entity_type or not (string.len(entity_type) > 0) then
+	    return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
+	 end
+      else
+	 -- TODO: Wildcard not supported for type? For the moment throw error if type not specified
+	 return nil, nil, nil, "No type specified for GET request"
+      end
 
       -- Set wildcard for attributes
       table.insert(attrs, "*")
 
       return entity_type, entities, attrs, nil
       
-   end -- TODO: Implement GET, POST and DELETE
+   end -- TODO: Implement POST and DELETE
 
 end
 
@@ -214,11 +251,11 @@ local function get_token(token_url, iss, sub, aud)
       payload = payload
    }
    local signed_jwt = jwt:sign(private_key, unsigned_jwt)
-   local sz = math.ceil(signed_jwt:len() / 4)
-   ngx.log(ngx.ERR, "[DEBUG] Signed JWT (1): ", signed_jwt:sub(1,sz))
-   ngx.log(ngx.ERR, "[DEBUG] Signed JWT (2): ", signed_jwt:sub(sz+1,2*sz))
-   ngx.log(ngx.ERR, "[DEBUG] Signed JWT (3): ", signed_jwt:sub(2*sz+1,3*sz))
-   ngx.log(ngx.ERR, "[DEBUG] Signed JWT (4): ", signed_jwt:sub(3*sz+1,4*sz))
+   --local sz = math.ceil(signed_jwt:len() / 4)
+   --ngx.log(ngx.ERR, "[DEBUG] Signed JWT (1): ", signed_jwt:sub(1,sz))
+   --ngx.log(ngx.ERR, "[DEBUG] Signed JWT (2): ", signed_jwt:sub(sz+1,2*sz))
+   --ngx.log(ngx.ERR, "[DEBUG] Signed JWT (3): ", signed_jwt:sub(2*sz+1,3*sz))
+   --ngx.log(ngx.ERR, "[DEBUG] Signed JWT (4): ", signed_jwt:sub(3*sz+1,4*sz))
 
    -- Send request to token_url TODO restore code
    local ssl = false
@@ -277,7 +314,7 @@ local function get_delegation_evidence(issuer, target, policy, delegation_url, a
    headers["Authorization"] = "Bearer "..access_token
    
    -- Send request to /delegation endpoint of AR at delegation_url TODO restore code
-   ngx.log(ngx.ERR, "[DEBUG] /delegation req payload: ", cjson.encode(payload))
+   ngx.log(ngx.ERR, "[DEBUG] /delegation request payload: ", cjson.encode(payload))
    -- ngx.log(ngx.ERR, "[DEBUG] /delegation req headers: ", cjson.encode(headers))
    local ssl = false
    local options = {
@@ -327,7 +364,7 @@ local function get_delegation_evidence_ext(issuer, target, policy, token_url, ar
    if err then
       return nil, err
    end
-   ngx.log(ngx.ERR, "[DEBUG] Received access_token: ", token)
+   -- ngx.log(ngx.ERR, "[DEBUG] Received access_token: ", token)
 
    -- Get delegation evidence from external AR
    del_evi, err = get_delegation_evidence(issuer, target, policy, delegation_url, token, prev_steps)
@@ -411,8 +448,15 @@ return function(settings, user)
       return nil
    end
 
+   -- Check CB attribute based authorisation type
+   -- Currently only supported: cb_attr_ishare_auto
+   if settings["auth_mode"] ~= "cb_attr_ishare_auto" then
+      ngx.log(ngx.ERR, "CB attribute based authorisation type not supported: ", settings["auth_mode"])
+      return "api_key_unauthorized"
+   end
+
    -- TODO: remove debugs in this file
-   ngx.log(ngx.ERR, "[DEBUG] Starting cb-attr-based validation: ", cjson.encode(user))
+   ngx.log(ngx.ERR, "[DEBUG] Starting cb-attr-based validation with user info: ", cjson.encode(user))
    
    -- Build required policy from incoming request
    local req_policy, err = build_policy()
@@ -444,7 +488,7 @@ return function(settings, user)
       local delegation_url = user["authorisation_registry"]["delegation_endpoint"]
       local ar_eori = user["authorisation_registry"]["identifier"]
       local issuer = user["iss"]  -- TODO: Check correct?
-      local target = user["id"]  -- TODO: Check correct? Or "sub"?
+      local target = user["sub"]  -- TODO: Check correct? Or "id"?
       local api_key = user["api_key"]
       local user_del_evi = {}
       user_del_evi, err = get_delegation_evidence_ext(issuer, target, req_policy, token_url, ar_eori, delegation_url, api_key)
@@ -452,7 +496,7 @@ return function(settings, user)
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization when retrieving delegation evidence from external AR: ", err)
 	 return "api_key_unauthorized"
       end
-      ngx.log(ngx.ERR, "[DEBUG] User delegation evidence: ", cjson.encode(user_del_evi))
+      -- ngx.log(ngx.ERR, "[DEBUG] User delegation evidence: ", cjson.encode(user_del_evi))
       if user_del_evi["policySets"] and user_del_evi["policySets"][1] and user_del_evi["policySets"][1]["policies"] and user_del_evi["policySets"][1]["policies"][1] then
 	 user_policy = user_del_evi["policySets"][1]["policies"][1]
 	 user_policy_issuer = user_del_evi["policyIssuer"]
@@ -468,9 +512,8 @@ return function(settings, user)
    end
 
    -- Compare user policy with required policy
-   -- TODO check: also compare user policy target ID with user ID?
    ngx.log(ngx.ERR, "[DEBUG] Received user policy: ", cjson.encode(user_policy))
-   err = compare_policy(user_policy, req_policy, user_policy_targetsub, user["id"])  -- TODO: Check user.id correct? Or "sub"?
+   err = compare_policy(user_policy, req_policy, user_policy_targetsub, user["sub"])  -- TODO: Check user.id correct? Or "sub"?
    if err then
       ngx.log(ngx.ERR, "Failed CB attribute based authorization when comparing user policy with required policy: ", err)
       return "api_key_unauthorized"
@@ -513,7 +556,7 @@ return function(settings, user)
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization when retrieving delegation evidence from local AR: ", err)
 	 return "api_key_unauthorized"
       end
-      ngx.log(ngx.ERR, "[DEBUG] Local AR delegation evidence: ", cjson.encode(local_user_del_evi))
+      ngx.log(ngx.ERR, "[DEBUG] Received local AR delegation evidence: ", cjson.encode(local_user_del_evi))
       if local_user_del_evi["policySets"] and local_user_del_evi["policySets"][1] and local_user_del_evi["policySets"][1]["policies"] and local_user_del_evi["policySets"][1]["policies"][1] then
 	 local_user_policy = local_user_del_evi["policySets"][1]["policies"][1]
 	 err = check_permit(local_user_policy)
@@ -533,4 +576,5 @@ return function(settings, user)
    end
 
    -- Policy validated, access granted
+   ngx.log(ngx.ERR, "[DEBUG] Policy validated, access granted")
 end
