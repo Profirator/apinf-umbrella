@@ -40,7 +40,6 @@ export default Component.extend({
       { id: 'api_key_only', name: 'API Key Only - IP based rate limits are ignored (only API key limits are applied)' },
     ];
 
-    // { id: null, name: 'Default: Role based' },
     this.authModeOptions = [
       { id: null, name: 'Default: Role based' },
       { id: 'cb_attr_ishare_auto', name: 'Context Broker attribute based - iSHARE compliant (automatically)' }

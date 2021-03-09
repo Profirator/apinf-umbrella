@@ -24,11 +24,6 @@ export default Component.extend(Save, {
       { id: 'authorization', name: 'Authorization' },
     ];
 
-    //this.authModeOptions = [
-    //  { id: null, name: 'Default: Role based' },
-    //  { id: 'role', name: 'Role based' },
-    //  { id: 'cb_attr_auto', name: 'Context Broker attribute based (automatically)' }
-    //];
   },
 
   actions: {

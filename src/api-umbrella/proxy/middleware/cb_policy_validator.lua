@@ -24,7 +24,7 @@ local function get_policy_parameters(method)
    local attrs = {}
    
    -- Check method
-   if not (method == "PATCH" or method == "GET") then
+   if not (method == "PATCH" or method == "GET" or method == "DELETE" or method == "POST") then
       return nil, nil, nil, "HTTP method "..method.." not supported for CB attribute based authorisation"
    end
 
@@ -75,8 +75,38 @@ local function get_policy_parameters(method)
 	 end
       end
       
-      
-      
+      return entity_type, entities, attrs, nil
+   elseif method == "DELETE" then
+      -- DELETE request for deleting entities (or attributes)
+      -- Check NGSI-LD compliance of URI (lua does not support non-capturing groups)
+      local check = string.match(in_uri, ".*/entities/.+/?a?t?t?r?s?/?.*")
+      if not check then
+	 return nil, nil, nil, "No NGSI-LD compliant DELETE request"
+      end
+      -- TODO: Implement batch update via ngsi-ld/v1/entityOperations/delete
+
+      -- Get entity ID
+      local entity_id = string.match(in_uri, ".*/entities/([^/.]+)")
+      if not entity_id or not (string.len(entity_id) > 0) then
+	 -- No entity specified, throw error
+	 return nil, nil, nil, "No entity ID specified for DELETE request"
+      end
+      table.insert(entities, entity_id)
+
+      -- Get entity type
+      entity_type = get_type_from_entity_id(entity_id)
+      if not entity_type or not (string.len(entity_type) > 0) then
+	 return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
+      end
+
+      -- Get attribute from URI
+      local attr = string.match(in_uri, ".*/attrs/(.*)")
+      if attr and string.len(attr) > 0 then
+	 table.insert(attrs, attr)
+      else
+	 -- Deleting whole entity, set wildcard for attributes
+	 table.insert(attrs, "*")
+      end
 
       return entity_type, entities, attrs, nil
    elseif method == "GET" then
@@ -116,8 +146,49 @@ local function get_policy_parameters(method)
       table.insert(attrs, "*")
 
       return entity_type, entities, attrs, nil
-      
-   end -- TODO: Implement POST and DELETE
+   elseif method == "POST" then
+      -- POST request for creating entities
+      -- Check NGSI-LD compliance of URI
+      local check = string.match(in_uri, ".*/entities/*.*")
+      if not check then
+	 return nil, nil, nil, "No NGSI-LD compliant GET request"
+      end
+      -- TODO: Implement batch create via ngsi-ld/v1/entityOperations/upsert and ngsi-ld/v1/entityOperations/create
+
+      -- Get entity ID
+      local body_json = cjson.decode(body_data)
+      local entity_id = string.match(in_uri, ".*/entities/([^/.]+)")
+      if not entity_id or not (string.len(entity_id) > 0) then
+	 -- No entity specified in URI, obtaining from payload
+	 if not body_json["id"] then
+	    return nil, nil, nil, "Missing entity ID in payload of POST request"
+	 end
+	 entity_id = body_json["id"]
+      end
+      table.insert(entities, entity_id)
+
+      -- Get entity type from payload or entity ID
+      if body_json and body_json["type"] then
+	 entity_type = body_json["type"]
+      else
+	 entity_type = get_type_from_entity_id(entity_id)
+	 if not entity_type or not (string.len(entity_type) > 0) then
+	    return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
+	 end
+      end
+
+      -- Get attribute
+      local attr = string.match(in_uri, ".*/attrs/(.*)")
+      if attr and string.len(attr) > 0 then
+	 -- Attribute part of URI, creating single attribute for entity
+	 table.insert(attrs, attr)
+      else
+	 -- Whole entity to be created, wildcard for attributes
+	 table.insert(attrs, "*")
+      end
+
+      return entity_type, entities, attrs, nil
+   end 
 
 end
 
@@ -440,6 +511,37 @@ local function check_permit(local_user_policy)
    return nil
 end
 
+-- Validate the incoming JWT
+local function validate_token(token)
+
+   -- Decode JWT without validation
+   local decoded_token = jwt:load_jwt(token)
+   local header = decoded_token["header"]
+
+   -- Check for RS256 header to be iSHARE compliant
+   if header["alg"] ~= "RS256" then
+      return "RS256 algorithm must be used and specified in JWT header"
+   end
+   
+   -- Get first certificate
+   if not header["x5c"] then
+      return "JWT must contain x5c header parameter"
+   end
+   local cert = header["x5c"][1]
+   local pub_key = "-----BEGIN CERTIFICATE-----\n"..cert.."\n-----END CERTIFICATE-----\n"
+   
+   -- Verify signature
+   local jwt_obj = jwt:verify(pub_key, token)
+   if not jwt_obj["valid"] then
+      return "JWT is not valid"
+   end
+   if not jwt_obj["verified"] then
+      return "Verification failed: "..jwt_obj["reason"]
+   end
+
+   return nil
+end
+
 -- Validate policies for incoming NGSI-LD compliant request
 return function(settings, user)
 
@@ -457,6 +559,13 @@ return function(settings, user)
 
    -- TODO: remove debugs in this file
    ngx.log(ngx.ERR, "[DEBUG] Starting cb-attr-based validation with user info: ", cjson.encode(user))
+
+   -- Validate incoming JWT
+   local err = validate_token(user["api_key"])
+   if err then
+      ngx.log(ngx.ERR, "Failed CB attribute based authorization, User JWT could not be validated: ", err)
+      return "api_key_unauthorized"
+   end
    
    -- Build required policy from incoming request
    local req_policy, err = build_policy()
@@ -527,7 +636,7 @@ return function(settings, user)
    end
    
    -- Check issuer of user policy:
-   --   * If own EORI, then check against own AR. --> Get delEv from ownAR(iss=ownEORI,target=user) and check rule for Permit
+   --   * If own EORI, the user is authorized
    --   * If different EORI, then ask own AR for policy with own EORI --> Get delEv from ownAR(iss=ownEORI,target=extIss) and check rule for Permit
    -- If above ok ==> access granted!!!
    if not config["gatekeeper"]["jws"]["identifier"] then
@@ -545,8 +654,17 @@ return function(settings, user)
       return "api_key_unauthorized"
    end
    local local_ar_host = config["gatekeeper"]["authorisation_registry"]["host"]
-   local local_token_url = local_ar_host.."/connect/token"
-   local local_delegation_url = local_ar_host.."/delegation"
+   local local_token_url = config["gatekeeper"]["authorisation_registry"]["token_endpoint"]
+   local local_delegation_url = config["gatekeeper"]["authorisation_registry"]["delegation_endpoint"]
+   if not local_token_url then
+      ngx.log(ngx.ERR, "Missing local authorisation registry /token endpoint information in config")
+      return "api_key_unauthorized"
+   end
+   if not local_delegation_url then
+      ngx.log(ngx.ERR, "Missing local authorisation registry /delegation endpoint information in config")
+      return "api_key_unauthorized"
+   end
+      
    if local_eori ~= user_policy_issuer then
       -- Policy was not issued by local authority
       -- Check at local AR for policy delegation
@@ -570,9 +688,7 @@ return function(settings, user)
       end
    else
       -- User policy claims to be issued by local authority
-      -- Check at local AR for this policy
-      ngx.log(ngx.ERR, "[DEBUG] Policy issued by local authority, confirm at local AR")
-      -- TODO implement
+      ngx.log(ngx.ERR, "[DEBUG] Policy issued by local authority")
    end
 
    -- Policy validated, access granted

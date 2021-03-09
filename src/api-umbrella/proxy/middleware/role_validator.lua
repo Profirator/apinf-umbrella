@@ -14,7 +14,6 @@ return function(settings, user)
      ngx.log(ngx.ERR, "[DEBUG] Skipping role based validation")
      return nil
   end
-  ngx.log(ngx.ERR, "[DEBUG] Performing role based validation")
 
   local authenticated = false
   if user then
