@@ -69,16 +69,16 @@ return function(settings)
 
   -- Check if CB-attr-based authentication was chosen
   if settings and settings["auth_mode"] and string.find(settings["auth_mode"], "cb_attr") then
-     if not config["gatekeeper"]["authorisation_registry"] then
+     if not config["authorisation_registry"] then
 	ngx.log(ngx.ERR, "Missing authorisation registry information in config at gatekeeper.authorisation_registry")
 	return "api_key_unauthorized"
      end
-     if not config["gatekeeper"]["jws"] then
+     if not config["jws"] then
 	ngx.log(ngx.ERR, "Missing JWS information in config at gatekeeper.jws")
 	return "api_key_unauthorized"
      end
      
-     api_key.ar_host = config["gatekeeper"]["authorisation_registry"]["host"]
+     api_key.ar_host = config["authorisation_registry"]["host"]
      api_key.mode = settings["auth_mode"]
   end
 

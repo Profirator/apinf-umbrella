@@ -10,6 +10,14 @@ local split = plutils.split
 local is_empty = types.is_empty
 local cjson = require "cjson"
 
+-- Set rootCA if provided in config
+local isTrustCASet = false
+if config["jws"] and config["jws"]["root_ca_file"] then
+   jwt:set_trusted_certs_file(config["jws"]["root_ca_file"])
+   isTrustCASet = true
+   ngx.log(ngx.ERR, "[DEBUG] Added root CA file ", config["jws"]["root_ca_file"])
+end
+
 -- Get entity type from entity ID
 -- Requires Entity ID in this format: urn:XXX:<TYPE>:XXX
 local function get_type_from_entity_id(entity_id)
@@ -286,14 +294,14 @@ local function build_policy()
    return policy, nil
 end
 
--- Get token from AR TODO: implement
+-- Get token from AR
 local function get_token(token_url, iss, sub, aud)
    -- Get certificates and key
-   if (not config["gatekeeper"]["jws"]["private_key"]) or (not config["gatekeeper"]["jws"]["x5c"]) then
+   if ( (not config["jws"]) or (not config["jws"]["private_key"]) or (not config["jws"]["x5c"]) ) then
       return nil, "Missing JWS information in config"
    end
-   local private_key = config["gatekeeper"]["jws"]["private_key"]
-   local x5c_certs = config["gatekeeper"]["jws"]["x5c"]
+   local private_key = config["jws"]["private_key"]
+   local x5c_certs = config["jws"]["x5c"]
 
    -- Build JWT Header
    local header = {
@@ -427,10 +435,10 @@ local function get_delegation_evidence_ext(issuer, target, policy, token_url, ar
    local del_evi = {}
 
    -- Get token at external AR
-   if not config["gatekeeper"]["jws"]["identifier"] then
+   if (not config["jws"]) or (not config["jws"]["identifier"]) then
       return nil, "Missing identifier information in jws config"
    end
-   local local_eori = config["gatekeeper"]["jws"]["identifier"]
+   local local_eori = config["jws"]["identifier"]
    local token, err = get_token(token_url, local_eori, local_eori, ar_eori)
    if err then
       return nil, err
@@ -514,7 +522,7 @@ end
 -- Validate the incoming JWT
 local function validate_token(token)
 
-   -- Decode JWT without validation
+   -- Decode JWT without validation to extract header params first
    local decoded_token = jwt:load_jwt(token)
    local header = decoded_token["header"]
 
@@ -522,15 +530,21 @@ local function validate_token(token)
    if header["alg"] ~= "RS256" then
       return "RS256 algorithm must be used and specified in JWT header"
    end
-   
-   -- Get first certificate
+
+   -- Check for x5c header
    if not header["x5c"] then
       return "JWT must contain x5c header parameter"
    end
-   local cert = header["x5c"][1]
-   local pub_key = "-----BEGIN CERTIFICATE-----\n"..cert.."\n-----END CERTIFICATE-----\n"
    
+   -- Get first certificate if not RootCA was set
+   local pub_key = nil
+   if not isTrustCASet then
+      local cert = header["x5c"][1]
+      pub_key = "-----BEGIN CERTIFICATE-----\n"..cert.."\n-----END CERTIFICATE-----\n"
+   end
+      
    -- Verify signature
+   -- If Root CA file is set, the verification will include validation of the cert chain
    local jwt_obj = jwt:verify(pub_key, token)
    if not jwt_obj["valid"] then
       return "JWT is not valid"
@@ -639,23 +653,23 @@ return function(settings, user)
    --   * If own EORI, the user is authorized
    --   * If different EORI, then ask own AR for policy with own EORI --> Get delEv from ownAR(iss=ownEORI,target=extIss) and check rule for Permit
    -- If above ok ==> access granted!!!
-   if not config["gatekeeper"]["jws"]["identifier"] then
+   if (not config["jws"]) or (not config["jws"]["identifier"]) then
       ngx.log(ngx.ERR, "Missing identifier information in jws config")
       return "api_key_unauthorized"
    end
-   local local_eori = config["gatekeeper"]["jws"]["identifier"]
-   if not config["gatekeeper"]["authorisation_registry"]["identifier"] then
+   local local_eori = config["jws"]["identifier"]
+   if (not config["authorisation_registry"]) or (not config["authorisation_registry"]["identifier"]) then
       ngx.log(ngx.ERR, "Missing identifier information in AR config")
       return "api_key_unauthorized"
    end
-   local local_ar_eori = config["gatekeeper"]["authorisation_registry"]["identifier"]
-   if not config["gatekeeper"]["authorisation_registry"]["host"] then
+   local local_ar_eori = config["authorisation_registry"]["identifier"]
+   if not config["authorisation_registry"]["host"] then
       ngx.log(ngx.ERR, "Missing local authorisation registry host information in config")
       return "api_key_unauthorized"
    end
-   local local_ar_host = config["gatekeeper"]["authorisation_registry"]["host"]
-   local local_token_url = config["gatekeeper"]["authorisation_registry"]["token_endpoint"]
-   local local_delegation_url = config["gatekeeper"]["authorisation_registry"]["delegation_endpoint"]
+   local local_ar_host = config["authorisation_registry"]["host"]
+   local local_token_url = config["authorisation_registry"]["token_endpoint"]
+   local local_delegation_url = config["authorisation_registry"]["delegation_endpoint"]
    if not local_token_url then
       ngx.log(ngx.ERR, "Missing local authorisation registry /token endpoint information in config")
       return "api_key_unauthorized"
