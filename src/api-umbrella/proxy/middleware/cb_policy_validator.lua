@@ -501,8 +501,9 @@ local function compare_policy(user_policy, req_policy, user_policy_target, req_p
 end
 
 -- Check for Permit rule in policy
-local function check_permit(local_user_policy)
+local function check_permit_policy(local_user_policy, notBefore, notAfter)
 
+   -- Check for Permit rule
    local rules = local_user_policy.rules
    local found = false
    for index, value in ipairs(rules) do
@@ -511,11 +512,16 @@ local function check_permit(local_user_policy)
 	 break
       end
    end
-
    if not found then
-      return "No Permit rule found"
+      return "No Permit rule found in policy"
    end
 
+   -- Check expiration of policy
+   local now = os.time()
+   if now < notBefore or now >= notAfter then
+      return "Policy has expired or is not yet valid"
+   end
+   
    return nil
 end
 
@@ -595,12 +601,16 @@ return function(settings, user)
    local user_policy = {}
    local user_policy_issuer = nil
    local user_policy_targetsub = nil
+   local del_notBefore = nil
+   local del_notAfter = nil
    if user["delegation_evidence"] and user["delegation_evidence"]["policySets"] then
       -- Policy already provided in JWT
       if user["delegation_evidence"]["policySets"][1] and user["delegation_evidence"]["policySets"][1]["policies"] and user["delegation_evidence"]["policySets"][1]["policies"][1] then
 	 user_policy = user["delegation_evidence"]["policySets"][1]["policies"][1]
 	 user_policy_issuer = user["delegation_evidence"]["policyIssuer"]
 	 user_policy_targetsub = user["delegation_evidence"]["target"]["accessSubject"]
+	 del_notBefore = user["delegation_evidence"]["notBefore"]
+	 del_notAfter = user["delegation_evidence"]["notOnOrAfter"]
       else
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization: User policy could not be found in JWT")
 	 return "api_key_unauthorized"
@@ -624,6 +634,8 @@ return function(settings, user)
 	 user_policy = user_del_evi["policySets"][1]["policies"][1]
 	 user_policy_issuer = user_del_evi["policyIssuer"]
 	 user_policy_targetsub = user_del_evi["target"]["accessSubject"]
+	 del_notBefore = user_del_evi["notBefore"]
+	 del_notAfter = user_del_evi["notOnOrAfter"]
       else
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization: User policy could not be found in AR response")
 	 return "api_key_unauthorized"
@@ -643,7 +655,7 @@ return function(settings, user)
    end
 
    -- Check for permit rule
-   err = check_permit(user_policy)
+   err = check_permit_policy(user_policy, del_notBefore, del_notAfter)
    if err then
       ngx.log(ngx.ERR, "Failed CB attribute based authorization when checking user policy rules: ", err)
       return "api_key_unauthorized"
@@ -691,7 +703,7 @@ return function(settings, user)
       ngx.log(ngx.ERR, "[DEBUG] Received local AR delegation evidence: ", cjson.encode(local_user_del_evi))
       if local_user_del_evi["policySets"] and local_user_del_evi["policySets"][1] and local_user_del_evi["policySets"][1]["policies"] and local_user_del_evi["policySets"][1]["policies"][1] then
 	 local_user_policy = local_user_del_evi["policySets"][1]["policies"][1]
-	 err = check_permit(local_user_policy)
+	 err = check_permit_policy(local_user_policy, local_user_del_evi["notBefore"], local_user_del_evi["notOnOrAfter"])
 	 if err then
 	    ngx.log(ngx.ERR, "Failed CB attribute based authorization when checking delegated policy at local AR: ", err)
 	    return "api_key_unauthorized"
