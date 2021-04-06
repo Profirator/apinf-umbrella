@@ -7,7 +7,7 @@ end
 
 local api_key_validator = require "api-umbrella.proxy.middleware.api_key_validator"
 local api_settings = require "api-umbrella.proxy.middleware.api_settings"
-local cb_policy_validator = require "api-umbrella.proxy.middleware.cb_policy_validator"
+local policy_validator_cb_ishare_auto = require "api-umbrella.proxy.middleware.policy_validator_cb_ishare_auto"
 local error_handler = require "api-umbrella.proxy.error_handler"
 local https_transition_user_validator = require "api-umbrella.proxy.middleware.https_transition_user_validator"
 local https_validator = require "api-umbrella.proxy.middleware.https_validator"
@@ -90,9 +90,9 @@ if err then
   return error_handler(err, settings)
 end
 
--- If this API requires CB-attribute based authorisation, verify that the
+-- If this API requires CB-attribute based iSHARE-compliant  authorisation, verify that the
 -- user has the required policies
-err = cb_policy_validator(settings, user)
+err, err_data = policy_validator_cb_ishare_auto(settings, user)
 if err then
    return error_handler(err, settings)
 end

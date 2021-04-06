@@ -319,6 +319,10 @@ apiSettings:
       status_code: 403
       code: API_KEY_OR_TOKEN_UNAUTHORIZED
       message: The api_key or token supplied is not authorized to access the given service. Contact us at {{contact_url}} for assistance
+    policy_validation_failed:
+      status_code: 403
+      code: POLICY_VALIDATION_FAILED
+      message: The policy validation failed and access to the given service is not authorized. Contact us at {{contact_url}} for assistance. Reason: {{validation_error}}
     token_not_supported:
       status_code: 403
       code: TOKEN_NOT_SUPPORTED

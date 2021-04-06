@@ -3,6 +3,7 @@ local types = require "pl.types"
 local stringx = require "pl.stringx"
 local plutils = require "pl.utils"
 local jwt = require "resty.jwt"
+local x509 = require("resty.openssl.x509")
 local http = require "resty.http"
 
 local startswith = stringx.startswith
@@ -21,7 +22,7 @@ end
 -- Get entity type from entity ID
 -- Requires Entity ID in this format: urn:XXX:<TYPE>:XXX
 local function get_type_from_entity_id(entity_id)
-   entity_type = string.match(entity_id, "urn:.+:(.+):.+")
+   local entity_type = string.match(entity_id, "urn:.+:(.+):.+")
    return entity_type
 end
 
@@ -208,7 +209,7 @@ local function random_string(l)
    
    math.randomseed(os.time())
    
-   charTable = {}
+   local charTable = {}
    for c in chars:gmatch"." do
       table.insert(charTable, c)
    end
@@ -463,8 +464,8 @@ local function compare_policy(user_policy, req_policy, user_policy_target, req_p
    end
 
    -- Compare policy parameter: action
-   user_actions = user_policy.target.actions
-   req_actions = req_policy.target.actions
+   local user_actions = user_policy.target.actions
+   local req_actions = req_policy.target.actions
    for index, value in ipairs(req_actions) do
       if not has_value(user_actions, value) then
 	 return "User policy does not contain action "..value
@@ -472,8 +473,8 @@ local function compare_policy(user_policy, req_policy, user_policy_target, req_p
    end
 
    -- Compare policy parameter: attributes
-   user_attrs = user_policy.target.resource.attributes
-   req_attrs = req_policy.target.resource.attributes
+   local user_attrs = user_policy.target.resource.attributes
+   local req_attrs = req_policy.target.resource.attributes
    for index, value in ipairs(req_attrs) do
       if not has_value(user_attrs, value) then
 	 return "User policy does not contain required attribute: "..value
@@ -481,15 +482,15 @@ local function compare_policy(user_policy, req_policy, user_policy_target, req_p
    end
 
    -- Compare policy parameter: type
-   user_type = user_policy.target.resource.type
-   req_type = req_policy.target.resource.type
+   local user_type = user_policy.target.resource.type
+   local req_type = req_policy.target.resource.type
    if user_type ~= req_type then
       return "User policy resource is not of required type: "..req_type.." != "..user_type
    end
 
    -- Compare policy parameter: identifier
-   user_ids = user_policy.target.resource.identifiers
-   req_ids = req_policy.target.resource.identifiers
+   local user_ids = user_policy.target.resource.identifiers
+   local req_ids = req_policy.target.resource.identifiers
    -- Check for exact entity IDs
    for index, value in ipairs(req_ids) do
       if not has_value(user_ids, value) then
@@ -542,18 +543,44 @@ local function validate_token(token)
       return "JWT must contain x5c header parameter"
    end
    
-   -- Get first certificate if not RootCA was set
-   local pub_key = nil
-   if not isTrustCASet then
-      local cert = header["x5c"][1]
-      pub_key = "-----BEGIN CERTIFICATE-----\n"..cert.."\n-----END CERTIFICATE-----\n"
+   -- Get first certificate
+   local cert = header["x5c"][1]
+   local pub_key = "-----BEGIN CERTIFICATE-----\n"..cert.."\n-----END CERTIFICATE-----\n"
+   
+   -- Compare policy issuer with certificate subject
+   local cr, err = x509.new(pub_key)
+   if not err then
+      local subname, err = cr:get_subject_name()
+      if err then
+	 return "Error when retrieving subject name from certificate: "..err
+      end
+      local serialnumber, pos, err = subname:find("serialNumber")
+      if err then
+	 return "Error when retrieving serial number from certificate: "..err
+      end
+      if not serialnumber then
+	 return "Empty serial number in certificate"
+      end
+      local certsub = serialnumber.blob
+      local payload = decoded_token["payload"]
+      local issuer = payload['iss']
+      if certsub ~= issuer then
+	 return "Certificate serial number "..certsub.." does not equal policy issuer "..issuer
+      end
+   else
+      return "Error when loading certificate: "..err
    end
-      
+   
    -- Verify signature
    -- If Root CA file is set, the verification will include validation of the cert chain
-   local jwt_obj = jwt:verify(pub_key, token)
+   local jwt_obj = nil
+   if not isTrustCASet then
+      jwt_obj = jwt:verify(pub_key, token)
+   else
+      jwt_obj = jwt:verify(nil, token)
+   end
    if not jwt_obj["valid"] then
-      return "JWT is not valid"
+      return "User policy JWT is not valid"
    end
    if not jwt_obj["verified"] then
       return "Verification failed: "..jwt_obj["reason"]
@@ -574,7 +601,9 @@ return function(settings, user)
    -- Currently only supported: cb_attr_ishare_auto
    if settings["auth_mode"] ~= "cb_attr_ishare_auto" then
       ngx.log(ngx.ERR, "CB attribute based authorisation type not supported: ", settings["auth_mode"])
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Internal error"
+      }
    end
 
    -- TODO: remove debugs in this file
@@ -584,14 +613,18 @@ return function(settings, user)
    local err = validate_token(user["api_key"])
    if err then
       ngx.log(ngx.ERR, "Failed CB attribute based authorization, User JWT could not be validated: ", err)
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "User JWT could not be validated: "..err
+      }
    end
    
    -- Build required policy from incoming request
    local req_policy, err = build_policy()
    if err then
       ngx.log(ngx.ERR, "Failed CB attribute based authorization: ", err)
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = err
+      }
    end
    local req_policies = {}
    table.insert(req_policies, req_policy)
@@ -613,7 +646,9 @@ return function(settings, user)
 	 del_notAfter = user["delegation_evidence"]["notOnOrAfter"]
       else
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization: User policy could not be found in JWT")
-	 return "api_key_unauthorized"
+	 return "policy_validation_failed", {
+	    validation_error = "User policy could not be found in JWT"
+         }
       end
    elseif user["authorisation_registry"] then
       -- AR info provided in JWT, get user policy from AR
@@ -627,7 +662,9 @@ return function(settings, user)
       user_del_evi, err = get_delegation_evidence_ext(issuer, target, req_policy, token_url, ar_eori, delegation_url, api_key)
       if err then
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization when retrieving delegation evidence from external AR: ", err)
-	 return "api_key_unauthorized"
+	 return "policy_validation_failed", {
+	    validation_error = "Error when retrieving delegation evidence from external AR: "..err
+         }
       end
       -- ngx.log(ngx.ERR, "[DEBUG] User delegation evidence: ", cjson.encode(user_del_evi))
       if user_del_evi["policySets"] and user_del_evi["policySets"][1] and user_del_evi["policySets"][1]["policies"] and user_del_evi["policySets"][1]["policies"][1] then
@@ -638,12 +675,16 @@ return function(settings, user)
 	 del_notAfter = user_del_evi["notOnOrAfter"]
       else
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization: User policy could not be found in AR response")
-	 return "api_key_unauthorized"
+	 return "policy_validation_failed", {
+	    validation_error = "User policy could not be found in external AR response"
+         }
       end
    else
       -- Info in JWT missing
       ngx.log(ngx.ERR, "Failed CB attribute based authorization: No policies or authorisation registry info in JWT")
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "No policies or authorisation registry info in JWT"
+      }
    end
 
    -- Compare user policy with required policy
@@ -651,14 +692,18 @@ return function(settings, user)
    err = compare_policy(user_policy, req_policy, user_policy_targetsub, user["sub"])  -- TODO: Check user.id correct? Or "sub"?
    if err then
       ngx.log(ngx.ERR, "Failed CB attribute based authorization when comparing user policy with required policy: ", err)
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Unauthorized user policy: "..err
+      }
    end
 
    -- Check for permit rule
    err = check_permit_policy(user_policy, del_notBefore, del_notAfter)
    if err then
       ngx.log(ngx.ERR, "Failed CB attribute based authorization when checking user policy rules: ", err)
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Unauthorized user policy: "..err
+      }
    end
    
    -- Check issuer of user policy:
@@ -667,28 +712,38 @@ return function(settings, user)
    -- If above ok ==> access granted!!!
    if (not config["jws"]) or (not config["jws"]["identifier"]) then
       ngx.log(ngx.ERR, "Missing identifier information in jws config")
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Internal error"
+      }
    end
    local local_eori = config["jws"]["identifier"]
    if (not config["authorisation_registry"]) or (not config["authorisation_registry"]["identifier"]) then
       ngx.log(ngx.ERR, "Missing identifier information in AR config")
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Internal error"
+      }
    end
    local local_ar_eori = config["authorisation_registry"]["identifier"]
    if not config["authorisation_registry"]["host"] then
       ngx.log(ngx.ERR, "Missing local authorisation registry host information in config")
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Internal error"
+      }
    end
    local local_ar_host = config["authorisation_registry"]["host"]
    local local_token_url = config["authorisation_registry"]["token_endpoint"]
    local local_delegation_url = config["authorisation_registry"]["delegation_endpoint"]
    if not local_token_url then
       ngx.log(ngx.ERR, "Missing local authorisation registry /token endpoint information in config")
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Internal error"
+      }
    end
    if not local_delegation_url then
       ngx.log(ngx.ERR, "Missing local authorisation registry /delegation endpoint information in config")
-      return "api_key_unauthorized"
+      return "policy_validation_failed", {
+	 validation_error = "Internal error"
+      }
    end
       
    if local_eori ~= user_policy_issuer then
@@ -698,19 +753,25 @@ return function(settings, user)
       local local_user_del_evi, err = get_delegation_evidence_ext(local_eori, user_policy_issuer, req_policy, local_token_url, local_ar_eori, local_delegation_url, nil)
       if err then
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization when retrieving delegation evidence from local AR: ", err)
-	 return "api_key_unauthorized"
+	 return "policy_validation_failed", {
+	    validation_error = "Error when retrieving policies from local AR: "..err
+         }
       end
       ngx.log(ngx.ERR, "[DEBUG] Received local AR delegation evidence: ", cjson.encode(local_user_del_evi))
       if local_user_del_evi["policySets"] and local_user_del_evi["policySets"][1] and local_user_del_evi["policySets"][1]["policies"] and local_user_del_evi["policySets"][1]["policies"][1] then
-	 local_user_policy = local_user_del_evi["policySets"][1]["policies"][1]
+	 local local_user_policy = local_user_del_evi["policySets"][1]["policies"][1]
 	 err = check_permit_policy(local_user_policy, local_user_del_evi["notBefore"], local_user_del_evi["notOnOrAfter"])
 	 if err then
 	    ngx.log(ngx.ERR, "Failed CB attribute based authorization when checking delegated policy at local AR: ", err)
-	    return "api_key_unauthorized"
+	    return "policy_validation_failed", {
+	       validation_error = "Local AR policy not authorized: "..err
+            }
 	 end
       else
 	 ngx.log(ngx.ERR, "Failed CB attribute based authorization: User policy could not be found in AR response")
-	 return "api_key_unauthorized"
+	 return "policy_validation_failed", {
+	    validation_error = "Policy could not be found in local AR response"
+         }
       end
    else
       -- User policy claims to be issued by local authority
@@ -720,3 +781,4 @@ return function(settings, user)
    -- Policy validated, access granted
    ngx.log(ngx.ERR, "[DEBUG] Policy validated, access granted")
 end
+

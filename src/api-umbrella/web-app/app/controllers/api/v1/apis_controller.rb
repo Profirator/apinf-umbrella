@@ -143,6 +143,7 @@ class Api::V1::ApisController < Api::V1::BaseController
           :api_key_invalid,
           :api_key_disabled,
           :api_key_unauthorized,
+          :policy_validation_failed,
           :over_rate_limit,
           :https_required,
         ],

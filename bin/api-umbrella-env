@@ -60,6 +60,7 @@ export LD_LIBRARY_PATH="$API_UMBRELLA_EMBEDDED_ROOT/openresty/luajit/lib:$API_UM
 # /usr/local) so that other Lua packages on the system aren't picked up (since
 # they might conflict).
 export LUA_PATH="$API_UMBRELLA_EMBEDDED_ROOT/apps/core/shared/vendor/lua/resty_modules/lualib/?.lua;\
+$API_UMBRELLA_EMBEDDED_ROOT/apps/core/shared/vendor/lua/resty_modules/lualib/?/init.lua;\
 $API_UMBRELLA_EMBEDDED_ROOT/apps/core/shared/vendor/lua/share/lua/5.1/?.lua;\
 $API_UMBRELLA_EMBEDDED_ROOT/apps/core/shared/vendor/lua/share/lua/5.1/?/init.lua;\
 $API_UMBRELLA_EMBEDDED_ROOT/openresty/lualib/?.lua;\
