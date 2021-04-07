@@ -116,8 +116,8 @@ local function lookup_user(api_key)
       end
     end
 
+    -- For CB attribute based policies in JWT, Add extracted parameters from decoded JWT again
     if api_key["key_type"] == "token" and string.find(api_key["mode"], "cb_attr") and ext_user then
-       -- Add extracted parameters from decoded JWT again TODO: improve?!
        user["iss"] = ext_user["iss"]
        user["sub"] = ext_user["sub"]
        user["aud"] = ext_user["aud"]

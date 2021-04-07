@@ -94,7 +94,7 @@ end
 -- user has the required policies
 err, err_data = policy_validator_cb_ishare_auto(settings, user)
 if err then
-   return error_handler(err, settings)
+   return error_handler(err, settings, err_data)
 end
    
 -- If we've gotten this far, it means the user is authorized to access this

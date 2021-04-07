@@ -71,11 +71,15 @@ return function(settings)
   if settings and settings["auth_mode"] and string.find(settings["auth_mode"], "cb_attr") then
      if not config["authorisation_registry"] then
 	ngx.log(ngx.ERR, "Missing authorisation registry information in config at gatekeeper.authorisation_registry")
-	return "api_key_unauthorized"
+	return "policy_validation_failed", {
+	   validation_error = "Internal error"
+        }
      end
      if not config["jws"] then
 	ngx.log(ngx.ERR, "Missing JWS information in config at gatekeeper.jws")
-	return "api_key_unauthorized"
+	return "policy_validation_failed", {
+	   validation_error = "Internal error"
+        }
      end
      
      api_key.ar_host = config["authorisation_registry"]["host"]
