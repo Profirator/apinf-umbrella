@@ -11,7 +11,7 @@ return function(settings, user)
     return nil
   end
   if settings and settings["auth_mode"] and settings["auth_mode"] ~= nil then
-     ngx.log(ngx.ERR, "[DEBUG] Skipping role based validation")
+     -- Default auth mode: nil == role-based, otherwise skip role-based validation
      return nil
   end
 
