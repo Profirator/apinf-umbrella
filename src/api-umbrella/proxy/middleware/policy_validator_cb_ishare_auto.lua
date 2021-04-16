@@ -439,49 +439,68 @@ local function get_delegation_evidence_ext(issuer, target, policy, token_url, ar
 end
 
 -- Compare user policy with required policy
-local function compare_policy(user_policy, req_policy, user_policy_target, req_policy_target)
+local function compare_policy(user_policies, req_policy, user_policy_target, req_policy_target)
 
    -- Check if user IDs are equal
    if user_policy_target ~= req_policy_target then
-      return "User IDs do not match: "..user_policy_target.." != "..req_policy_target
+      return nil, "User IDs do not match: "..user_policy_target.." != "..req_policy_target
    end
 
-   -- Compare policy parameter: action
-   local user_actions = user_policy.target.actions
-   local req_actions = req_policy.target.actions
-   for index, value in ipairs(req_actions) do
-      if not has_value(user_actions, value) then
-	 return "User policy does not contain action "..value
+   -- Iterate over user policies
+   local policy_found = nil
+   for user_policy_index, user_policy in ipairs(user_policies) do
+      local actions_ok, attrs_ok, type_ok, ids_ok = true, true, true, true
+      
+      -- Compare policy parameter: action
+      local user_actions = user_policy.target.actions
+      local req_actions = req_policy.target.actions
+      for index, value in ipairs(req_actions) do
+	 if not has_value(user_actions, value) then
+	    -- Missing action in policy
+	    --return "User policy does not contain action "..value
+	    actions_ok = false
+	 end
+      end
+
+      -- Compare policy parameter: attributes
+      local user_attrs = user_policy.target.resource.attributes
+      local req_attrs = req_policy.target.resource.attributes
+      for index, value in ipairs(req_attrs) do
+	 if not has_value(user_attrs, value) then
+	    -- Missing required attribute
+	    --return "User policy does not contain required attribute: "..value
+	    attrs_ok = false
+	 end
+      end
+      
+      -- Compare policy parameter: type
+      local user_type = user_policy.target.resource.type
+      local req_type = req_policy.target.resource.type
+      if user_type ~= req_type then
+	 -- Wrong resource/entity type
+	 --return "User policy resource is not of required type: "..req_type.." != "..user_type
+	 type_ok = false
+      end
+      
+      -- Compare policy parameter: identifier
+      local user_ids = user_policy.target.resource.identifiers
+      local req_ids = req_policy.target.resource.identifiers
+      -- Check for exact entity IDs
+      for index, value in ipairs(req_ids) do
+	 if not has_value(user_ids, value) then
+	    -- Missing required identifier
+	    --return "User policy does not contain required identifier: "..value
+	    ids_ok = false
+	 end
+      end
+
+      -- Policy ok?
+      if actions_ok and attrs_ok and type_ok and ids_ok then
+	 return user_policy, nil
       end
    end
-
-   -- Compare policy parameter: attributes
-   local user_attrs = user_policy.target.resource.attributes
-   local req_attrs = req_policy.target.resource.attributes
-   for index, value in ipairs(req_attrs) do
-      if not has_value(user_attrs, value) then
-	 return "User policy does not contain required attribute: "..value
-      end
-   end
-
-   -- Compare policy parameter: type
-   local user_type = user_policy.target.resource.type
-   local req_type = req_policy.target.resource.type
-   if user_type ~= req_type then
-      return "User policy resource is not of required type: "..req_type.." != "..user_type
-   end
-
-   -- Compare policy parameter: identifier
-   local user_ids = user_policy.target.resource.identifiers
-   local req_ids = req_policy.target.resource.identifiers
-   -- Check for exact entity IDs
-   for index, value in ipairs(req_ids) do
-      if not has_value(user_ids, value) then
-	 return "User policy does not contain required identifier: "..value
-      end
-   end
-
-   return nil
+   
+   return nil, "None of the user policies matched required policy for this action"
 end
 
 -- Check for Permit rule in policy
@@ -654,14 +673,15 @@ return function(settings, user)
    
    -- Check for user policy
    local user_policy = {}
+   local user_policies = nil
    local user_policy_issuer = nil
    local user_policy_targetsub = nil
    local del_notBefore = nil
    local del_notAfter = nil
    if user["delegation_evidence"] and user["delegation_evidence"]["policySets"] then
       -- Policy already provided in JWT
-      if user["delegation_evidence"]["policySets"][1] and user["delegation_evidence"]["policySets"][1]["policies"] and user["delegation_evidence"]["policySets"][1]["policies"][1] then
-	 user_policy = user["delegation_evidence"]["policySets"][1]["policies"][1]
+      if user["delegation_evidence"]["policySets"][1] and user["delegation_evidence"]["policySets"][1]["policies"] then
+	 user_policies = user["delegation_evidence"]["policySets"][1]["policies"]
 	 user_policy_issuer = user["delegation_evidence"]["policyIssuer"]
 	 user_policy_targetsub = user["delegation_evidence"]["target"]["accessSubject"]
 	 del_notBefore = user["delegation_evidence"]["notBefore"]
@@ -686,8 +706,8 @@ return function(settings, user)
 	    validation_error = "Error when retrieving delegation evidence from user AR: "..err
          }
       end
-      if user_del_evi["policySets"] and user_del_evi["policySets"][1] and user_del_evi["policySets"][1]["policies"] and user_del_evi["policySets"][1]["policies"][1] then
-	 user_policy = user_del_evi["policySets"][1]["policies"][1]
+      if user_del_evi["policySets"] and user_del_evi["policySets"][1] and user_del_evi["policySets"][1]["policies"] then
+	 user_policies = user_del_evi["policySets"][1]["policies"]
 	 user_policy_issuer = user_del_evi["policyIssuer"]
 	 user_policy_targetsub = user_del_evi["target"]["accessSubject"]
 	 del_notBefore = user_del_evi["notBefore"]
@@ -705,7 +725,7 @@ return function(settings, user)
    end
 
    -- Compare user policy with required policy
-   err = compare_policy(user_policy, req_policy, user_policy_targetsub, user["sub"])
+   user_policy, err = compare_policy(user_policies, req_policy, user_policy_targetsub, user["sub"])
    if err then
       return "policy_validation_failed", {
 	 validation_error = "Unauthorized user policy: "..err
