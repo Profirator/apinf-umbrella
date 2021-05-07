@@ -9,14 +9,14 @@ de:
     google_oauth2: Google
   errors:
     messages:
-      invalid_host_format: "Erforderte Formatierung : \"example.com\""
-      invalid_url_prefix_format: "Muss mit \"/\" anfangen"
+      invalid_host_format: 'Erforderte Formatierung : "example.com"'
+      invalid_url_prefix_format: 'Muss mit "/" anfangen'
       admin_not_authorized: |-
-          You are not authorized to perform this action. You are only authorized to perform actions for APIs in the following areas:
+        You are not authorized to perform this action. You are only authorized to perform actions for APIs in the following areas:
 
-          %{authorized_scopes_list}
+        %{authorized_scopes_list}
 
-          Contact your API Umbrella administrator if you need access to new APIs.
+        Contact your API Umbrella administrator if you need access to new APIs.
   mongoid:
     attributes:
       api:
@@ -46,7 +46,7 @@ de:
         frontend_prefix: "Frontend Präfix"
   admin:
     errors:
-      host_format: "Erforderte Formatierung : \"example.com\""
+      host_format: 'Erforderte Formatierung : "example.com"'
     edit: Edit
     remove: Remove
     reorder: Reorder
@@ -76,7 +76,7 @@ de:
         legend: Backend
         server: Server
         note: "Define the server where the API is hosted. Multiple servers can be defined to perform load balancing."
-        empty_list: "No backend servers have been added yet. Click \"%{add}\" below to get started."
+        empty_list: 'No backend servers have been added yet. Click "%{add}" below to get started.'
         add: "Add Server"
       host:
         legend: Host
@@ -84,12 +84,12 @@ de:
       url_matches:
         legend: "Matching URL Prefixes"
         note: "What URL prefixes should be routed to this backend?"
-        empty_list: "No URL prefix matches have been added yet. Click \"%{add}\" below to get started."
+        empty_list: 'No URL prefix matches have been added yet. Click "%{add}" below to get started.'
         add: "Add URL Prefix"
       rewrites:
         legend: "Advanced Requests Rewriting"
         note: "Modify the incoming request's URL or headers before passing it to the backend."
-        empty_list: "No request rewrites have been added yet. Click \"%{add}\" below to get started."
+        empty_list: 'No request rewrites have been added yet. Click "%{add}" below to get started.'
         add: "Add Rewrite"
       sub_settings:
         legend: "Sub-URL Request Settings"

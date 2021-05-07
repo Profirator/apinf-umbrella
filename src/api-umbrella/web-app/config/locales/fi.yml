@@ -9,14 +9,14 @@ fi:
     google_oauth2: Google
   errors:
     messages:
-      invalid_host_format: "täytyy olla muodossa \"example.com\""
-      invalid_url_prefix_format: "Täytyy alkaa merkillä \"/\""
+      invalid_host_format: 'täytyy olla muodossa "example.com"'
+      invalid_url_prefix_format: 'Täytyy alkaa merkillä "/"'
       admin_not_authorized: |-
-          Sinulla ei ole oikeuksia tähän toimintoon. Sinulla on oikeudet vain seuraavien alueiden API:en käyttöön:
+        Sinulla ei ole oikeuksia tähän toimintoon. Sinulla on oikeudet vain seuraavien alueiden API:en käyttöön:
 
-          %{authorized_scopes_list}
+        %{authorized_scopes_list}
 
-          Ota yhteyttä API Umbrella:n ylläpitäjään jos tarvitset pääsyyn uusiin API:hin.
+        Ota yhteyttä API Umbrella:n ylläpitäjään jos tarvitset pääsyyn uusiin API:hin.
   mongoid:
     attributes:
       api:
@@ -46,7 +46,7 @@ fi:
         frontend_prefix: "Frontend etuliite"
   admin:
     errors:
-      host_format: "Täytyy olla muodossa \"example.com\""
+      host_format: 'Täytyy olla muodossa "example.com"'
     edit: Muokkaa
     remove: Poista
     reorder: Uudelleenjärjestä
@@ -76,7 +76,7 @@ fi:
         legend: Taustasovellus
         server: Serveri
         note: "Määritä server, missä API on ylläpidossa. Useampi serveri voidaan määritään kuorman tasaamiseksi."
-        empty_list: "Taustapalvelimia ei ole asetettu. Valitse \"%{add}\" lisätäksesi ensimmäisen."
+        empty_list: 'Taustapalvelimia ei ole asetettu. Valitse "%{add}" lisätäksesi ensimmäisen.'
         add: "Lisää serveri"
       host:
         legend: Isäntä
@@ -84,12 +84,12 @@ fi:
       url_matches:
         legend: "Osuvat URL etuliitteet"
         note: "Mitkä URL etuliitteet tulisi reitittää tähän taustasovellukseen?"
-        empty_list: "URL etuliitteitä koskevia sääntöjä ei ole asetettu. Valitse \"%{add}\" lisätäksesi ensimmäisen."
+        empty_list: 'URL etuliitteitä koskevia sääntöjä ei ole asetettu. Valitse "%{add}" lisätäksesi ensimmäisen.'
         add: "Lisää URL:in prexiksi"
       rewrites:
         legend: "Edistyneemmät pyyntöjen uudelleenkirjoitussäännöt"
         note: "Muokkaa tulevan pyynnön URL:lia tai HTTP -otsikoita, ennen kuin se välitetään taustajärjestelmälle."
-        empty_list: "Pyynnön uudelleenkirjoituksia ei ole vielä lisätty. Klikkaa \"%{add}\" alta aloittaaksesi."
+        empty_list: 'Pyynnön uudelleenkirjoituksia ei ole vielä lisätty. Klikkaa "%{add}" alta aloittaaksesi.'
         add: "Uusi rewrite -sääntö"
       sub_settings:
         legend: "Ali URL Pyyntiasetukset"

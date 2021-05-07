@@ -322,7 +322,6 @@ tasks:
       - ./build/work/stamp/app-deps/lua/libcidr-ffi
     method: checksum
 
-
   app-deps:lua:luaposix:
     deps:
       - deps:luarocks
