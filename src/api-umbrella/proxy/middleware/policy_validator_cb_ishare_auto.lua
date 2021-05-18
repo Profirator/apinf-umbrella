@@ -39,7 +39,7 @@ local function get_policy_parameters(method)
    -- Get request URI and strip query args
    --local in_uri = ngx.var.request_uri
    local in_uri = string.gsub(ngx.var.request_uri, "?.*", "")
-
+   
    -- Get request body, args and headers
    ngx.req.read_body()
    local body_data = ngx.req.get_body_data()
@@ -50,32 +50,45 @@ local function get_policy_parameters(method)
    if method == "PATCH" then
       -- PATCH request for updating entity attributes
       -- Check NGSI-LD compliance of URI
-      local check = string.match(in_uri, ".*/entities/.+/attrs/*.*")
-      if not check then
+      local check_ent = string.match(in_uri, ".*/entities/.+/attrs/*.*")
+      local check_sub = string.match(in_uri, ".*/subscriptions/.+")
+      if not check_ent and not check_sub then
 	 return nil, nil, nil, "No NGSI-LD compliant PATCH request"
       end
       -- TODO: Implement batch update via ngsi-ld/v1/entityOperations/upsert and ngsi-ld/v1/entityOperations/update
 
       -- Get entity ID
       local entity_id = string.match(in_uri, ".*/entities/(.+)/attrs.*")
-      if not entity_id or not (string.len(entity_id) > 0) then
-	 -- No entity specified, throw error
+      local sub_id = string.match(in_uri, ".*/subscriptions/([^/.]+)")
+      if check_sub and sub_id and (string.len(sub_id) > 0) then
+	 -- PATCH subscription
+	 entity_id = sub_id
+      elseif not entity_id or not (string.len(entity_id) > 0) then
+	 -- PATCH entity: No entity ID specified, throw error
 	 return nil, nil, nil, "No entity ID specified for PATCH request"
       end
       table.insert(entities, entity_id)
 
       -- Get entity type
       entity_type = get_type_from_entity_id(entity_id)
-      if not entity_type or not (string.len(entity_type) > 0) then
+      if check_sub then
+	 -- PATCH subscription: fixed entity type
+	 entity_type = "Subscription"
+      elseif not entity_type or not (string.len(entity_type) > 0) then
+	 -- PATCH entity: no type determined, throw error
 	 return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
       end
       
       -- Get attribute from URI
       local attr = string.match(in_uri, ".*/attrs/(.*)")
       if attr and string.len(attr) > 0 then
+	 -- PATCH entity: Get attribute from URL
 	 table.insert(attrs, attr)
+      elseif check_sub then
+	 -- PATCH subscription: allow for all attributes
+	 table.insert(attrs, "*")
       elseif req_headers and req_headers["Content-Type"] and req_headers["Content-Type"] == "application/json" then
-	 -- Get attributes from body, if specified and not in URI
+	 -- PATCH entity: Get attributes from body, if specified and not in URI
 	 local body_json = cjson.decode(body_data)
 	 for index, value in pairs(body_json) do
 	    table.insert(attrs, index)
@@ -86,23 +99,32 @@ local function get_policy_parameters(method)
    elseif method == "DELETE" then
       -- DELETE request for deleting entities (or attributes)
       -- Check NGSI-LD compliance of URI (lua does not support non-capturing groups)
-      local check = string.match(in_uri, ".*/entities/.+/?a?t?t?r?s?/?.*")
-      if not check then
+      local check_ent = string.match(in_uri, ".*/entities/.+/?a?t?t?r?s?/?.*")
+      local check_sub = string.match(in_uri, ".*/subscriptions/.+")
+      if not check_ent and not check_sub then
 	 return nil, nil, nil, "No NGSI-LD compliant DELETE request"
       end
       -- TODO: Implement batch update via ngsi-ld/v1/entityOperations/delete
 
       -- Get entity ID
       local entity_id = string.match(in_uri, ".*/entities/([^/.]+)")
-      if not entity_id or not (string.len(entity_id) > 0) then
-	 -- No entity specified, throw error
+      local sub_id = string.match(in_uri, ".*/subscriptions/([^/.]+)")
+      if check_sub and sub_id and (string.len(sub_id) > 0) then
+	 -- DELETE subscription
+	 entity_id = sub_id
+      elseif not entity_id or not (string.len(entity_id) > 0) then
+	 -- DELETE entity: No entity ID specified, throw error
 	 return nil, nil, nil, "No entity ID specified for DELETE request"
       end
       table.insert(entities, entity_id)
 
       -- Get entity type
       entity_type = get_type_from_entity_id(entity_id)
-      if not entity_type or not (string.len(entity_type) > 0) then
+      if check_sub then
+	 -- DELETE subscription: fixed entity type
+	 entity_type = "Subscription"
+      elseif not entity_type or not (string.len(entity_type) > 0) then
+	 -- DELETE entity: no type determined, throw error
 	 return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
       end
 
@@ -112,6 +134,7 @@ local function get_policy_parameters(method)
 	 table.insert(attrs, attr)
       else
 	 -- Deleting whole entity, set wildcard for attributes
+	 -- Also for delete subscription
 	 table.insert(attrs, "*")
       end
 
@@ -119,15 +142,20 @@ local function get_policy_parameters(method)
    elseif method == "GET" then
       -- GET request for reading entities attributes
       -- Check NGSI-LD compliance of URI
-      local check = string.match(in_uri, ".*/entities/*.*")
-      if not check then
+      local check_ent = string.match(in_uri, ".*/entities/*.*")
+      local check_sub = string.match(in_uri, ".*/subscriptions/*.*")
+      if not check_ent and not check_sub then
 	 return nil, nil, nil, "No NGSI-LD compliant GET request"
       end
 
       -- Get entity ID
       local entity_id = string.match(in_uri, ".*/entities/([^/.]+)")
-      if not entity_id or not (string.len(entity_id) > 0) then
-	 -- No entity specified, requesting all entities
+      local sub_id = string.match(in_uri, ".*/subscriptions/([^/.]+)")
+      if check_sub and sub_id and (string.len(sub_id) > 0) then
+	 -- GET subscriptions: retrieve specific subscription
+	 entity_id = sub_id
+      elseif check_sub or not entity_id or not (string.len(entity_id) > 0) then
+	 -- No entity/subscription ID specified, requesting all entities/subscriptions
 	 entity_id = "*"
       end
       table.insert(entities, entity_id)
@@ -135,11 +163,14 @@ local function get_policy_parameters(method)
       -- Get entity type if specified
       -- Otherwise use wildcard 
       entity_type = "*"
-      if uri_args and uri_args["type"] then
+      if check_sub then
+	 -- GET subscription: fixed type
+	 entity_type = "Subscription"
+      elseif uri_args and uri_args["type"] then
 	 entity_type = uri_args["type"]
       elseif post_args and post_args["type"] then
 	 entity_type = post_args["type"]
-      elseif entity_id ~= "*" then
+      elseif not check_sub and entity_id ~= "*" then
 	 entity_type = get_type_from_entity_id(entity_id)
 	 if not entity_type or not (string.len(entity_type) > 0) then
 	    return nil, nil, nil, "Entity ID must be urn:XXX:<TYPE>:XXX in order to determine the entity type"
@@ -154,19 +185,23 @@ local function get_policy_parameters(method)
 
       return entity_type, entities, attrs, nil
    elseif method == "POST" then
-      -- POST request for creating entities
+      -- POST request for creating entities or subscriptions
       -- Check NGSI-LD compliance of URI
-      local check = string.match(in_uri, ".*/entities/*.*")
-      if not check then
-	 return nil, nil, nil, "No NGSI-LD compliant GET request"
+      local check_ent = string.match(in_uri, ".*/entities/*.*")
+      local check_sub = string.match(in_uri, ".*/subscriptions/*")
+      if not check_ent and not check_sub then
+	 return nil, nil, nil, "No NGSI-LD compliant POST request"
       end
       -- TODO: Implement batch create via ngsi-ld/v1/entityOperations/upsert and ngsi-ld/v1/entityOperations/create
 
       -- Get entity ID
       local body_json = cjson.decode(body_data)
       local entity_id = string.match(in_uri, ".*/entities/([^/.]+)")
-      if not entity_id or not (string.len(entity_id) > 0) then
-	 -- No entity specified in URI, obtaining from payload
+      if check_sub then
+	 -- POST subscription has no ID
+	 entity_id = "*"
+      elseif not entity_id or not (string.len(entity_id) > 0) then
+	 -- POST entity: No entity ID specified in URI, obtaining from payload
 	 if not body_json["id"] then
 	    return nil, nil, nil, "Missing entity ID in payload of POST request"
 	 end
@@ -177,6 +212,9 @@ local function get_policy_parameters(method)
       -- Get entity type from payload or entity ID
       if body_json and body_json["type"] then
 	 entity_type = body_json["type"]
+      elseif check_sub then
+	 -- POST subscription has fixed type
+	 entity_type = "Subscription"
       else
 	 entity_type = get_type_from_entity_id(entity_id)
 	 if not entity_type or not (string.len(entity_type) > 0) then
@@ -191,6 +229,7 @@ local function get_policy_parameters(method)
 	 table.insert(attrs, attr)
       else
 	 -- Whole entity to be created, wildcard for attributes
+	 -- Also for POST subscription
 	 table.insert(attrs, "*")
       end
 
@@ -289,7 +328,7 @@ local function build_policy()
    local rule = {}
    rule.effect = "Permit"
    table.insert(policy.rules, rule)
-      
+   
    return policy, nil
 end
 
