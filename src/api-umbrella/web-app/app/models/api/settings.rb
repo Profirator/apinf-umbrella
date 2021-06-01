@@ -10,6 +10,7 @@ class Api::Settings
   field :disable_api_key, :type => Boolean
   field :api_key_verification_level, :type => String
   field :api_key_verification_transition_start_at, :type => Time
+  field :auth_mode, :type => String
   field :required_roles, :type => Array
   field :required_roles_override, :type => Boolean
   field :allowed_ips, :type => Array
@@ -51,6 +52,7 @@ class Api::Settings
   validate :validate_error_data_yaml_strings
   validate :validate_error_data
   validate :validate_ext_app_id
+  validate :validate_auth_mode
 
   # Nested attributes
   accepts_nested_attributes_for :headers, :rate_limits, :default_response_headers, :override_response_headers, :required_headers, :allow_destroy => true
@@ -204,6 +206,14 @@ class Api::Settings
     if(self.ext_auth_allowed)
       unless(self.idp_app_id.present?)
         self.errors.add("error_data", "if external auth is allowed, external IDP app id must be provided")
+      end
+    end
+  end
+
+  def validate_auth_mode
+    if(self.auth_mode.present? && self.auth_mode.include?('cb_attr'))
+      unless(!self.ext_auth_allowed)
+        self.errors.add("error_data", "If external auth is enabled, authorization mode can not be CB attribute based")
       end
     end
   end

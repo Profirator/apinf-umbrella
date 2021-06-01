@@ -90,6 +90,7 @@ class Test::Apis::V1::Users::TestIndex < Minitest::Test
       "rate_limits",
       "require_https",
       "require_https_transition_start_at",
+      "auth_mode",
       "required_roles",
       "required_roles_override",
     ].sort, record_data.fetch("settings").keys.sort)

@@ -278,6 +278,17 @@ en:
           code: API_KEY_UNAUTHORIZED
           message: The api_key supplied is not authorized to access the given service. Contact us at {{contact_url}} for assistance
           ```
+        error_data_policy_validation_failed: Policy validation failed
+        error_data_policy_validation_failed_tooltip_markdown: |-
+          <a href="http://en.wikipedia.org/wiki/YAML" target="_blank">YAML</a> definition of the Handlebars variables available to the error templates.
+
+          Default data:
+
+          ```
+          status_code: 403
+          code: POLICY_VALIDATION_FAILED
+          message: The policy validation failed and access to the given service is not authorized. Contact us at {{contact_url}} for assistance. Reason: {{validation_error}}
+          ```
         error_data_over_rate_limit: Over Rate Limit
         error_data_over_rate_limit_tooltip_markdown: |-
           <a href="http://en.wikipedia.org/wiki/YAML" target="_blank">YAML</a> definition of the Handlebars variables available to the error templates.

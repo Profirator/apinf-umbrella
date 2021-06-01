@@ -23,6 +23,7 @@ export default Component.extend(Save, {
       { id: 'authentication', name: 'Authentication' },
       { id: 'authorization', name: 'Authorization' },
     ];
+
   },
 
   actions: {

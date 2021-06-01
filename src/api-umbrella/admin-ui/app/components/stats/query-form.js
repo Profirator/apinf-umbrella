@@ -255,6 +255,7 @@ export default Component.extend({
             'api_key_disabled': 'api_key_disabled',
             'api_key_unverified': 'api_key_unverified',
             'api_key_unauthorized': 'api_key_unauthorized',
+            'policy_validation_failed': 'policy_validation_failed',
             'over_rate_limit': 'over_rate_limit',
             'internal_server_error': 'internal_server_error',
             'https_required': 'https_required',

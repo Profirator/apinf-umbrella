@@ -41,6 +41,7 @@ Rails.application.routes.draw do
           end
         end
         resources :users
+        resources :idps
         resources :website_backends
         resource :contact, :only => [:create]
 

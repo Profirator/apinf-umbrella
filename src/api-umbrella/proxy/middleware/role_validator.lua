@@ -10,6 +10,10 @@ return function(settings, user)
   if is_empty(required_roles) then
     return nil
   end
+  if settings and settings["auth_mode"] and settings["auth_mode"] ~= nil then
+     -- Default auth mode: nil == role-based, otherwise skip role-based validation
+     return nil
+  end
 
   local authenticated = false
   if user then

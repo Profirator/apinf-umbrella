@@ -24,9 +24,13 @@ local function resolve_api_key()
     if method == "header" and ngx.ctx.http_x_api_key then
       key.key_value = ngx.ctx.http_x_api_key
       key.key_type = "api_key"
-    elseif (method == "fiware-oauth2" or method == "keycloak-oauth2") and ngx.var.http_authorization and startswith(ngx.var.http_authorization, "Bearer ") then
+    elseif (method == "fiware-oauth2" or method == "keycloak-oauth2") and ngx.var.http_authorization and (startswith(ngx.var.http_authorization, "Bearer ") or startswith(ngx.var.http_authorization, "bearer ")) then
       key.key_value = split(ngx.var.http_authorization)[2]
       key.key_type = "token"
+
+      if ngx.var.http_x_auth_provider then
+        key.key_auth_provider = ngx.var.http_x_auth_provider
+      end
     elseif method == "getParam" and ngx.ctx.arg_api_key then
       key.key_value = ngx.ctx.arg_api_key
       key.key_type = "api_key"
@@ -50,6 +54,9 @@ return function(settings)
   -- Find the API key in the header, query string, or HTTP auth.
   local api_key = resolve_api_key()
 
+  -- Key mode defaults to empty string
+  api_key.mode = ""
+  
   -- Find if and IdP was set
   if settings and settings["ext_auth_allowed"] and config["gatekeeper"]["default_idp"] then
     api_key.idp = config["gatekeeper"]["default_idp"]
@@ -58,6 +65,25 @@ return function(settings)
     if settings["idp_mode"] then
       api_key.mode = settings["idp_mode"]
     end
+  end
+
+  -- Check if CB-attr-based authentication was chosen
+  if settings and settings["auth_mode"] and string.find(settings["auth_mode"], "cb_attr") then
+     if not config["authorisation_registry"] then
+	ngx.log(ngx.ERR, "Missing authorisation registry information in config at gatekeeper.authorisation_registry")
+	return "policy_validation_failed", {
+	   validation_error = "Internal error"
+        }
+     end
+     if not config["jws"] then
+	ngx.log(ngx.ERR, "Missing JWS information in config at gatekeeper.jws")
+	return "policy_validation_failed", {
+	   validation_error = "Internal error"
+        }
+     end
+     
+     api_key.ar_host = config["authorisation_registry"]["host"]
+     api_key.mode = settings["auth_mode"]
   end
 
   if is_empty(api_key["key_value"]) then
@@ -69,7 +95,8 @@ return function(settings)
   end
 
   -- Check if the user is trying to use an access token when external IDP is not allowed
-  if api_key["key_type"] == "token" and (not settings or (not settings["disable_api_key"] and not settings["ext_auth_allowed"])) then
+  local is_attr_based_auth = settings and settings["auth_mode"] and string.find(settings["auth_mode"], "cb_attr")
+  if api_key["key_type"] == "token" and (not settings or (not settings["disable_api_key"] and not settings["ext_auth_allowed"] and not is_attr_based_auth)) then
     return nil, "token_not_supported"
   end
 

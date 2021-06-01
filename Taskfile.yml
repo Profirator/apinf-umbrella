@@ -426,6 +426,19 @@ tasks:
       - ./build/work/stamp/app-deps/lua/resty-jwt
     method: checksum
 
+  app-deps:lua:resty-openssl:
+    deps:
+      - deps:luarocks
+    cmds:
+      - ./tasks/app-deps/lua/resty-openssl
+    sources:
+      - ./build/work/stamp/deps/luarocks
+      - ./tasks/app-deps/lua/resty-openssl
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/app-deps/lua/resty-openssl
+    method: checksum
+
   app-deps:lua:resty-logger-socket:
     deps:
       - deps:luarocks
@@ -509,6 +522,7 @@ tasks:
       - task: app-deps:lua:resty-auto-ssl
       - task: app-deps:lua:resty-http
       - task: app-deps:lua:resty-jwt
+      - task: app-deps:lua:resty-openssl
       - task: app-deps:lua:resty-logger-socket
       - task: app-deps:lua:resty-shcache
       - task: app-deps:lua:resty-txid

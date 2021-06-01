@@ -34,6 +34,9 @@ local function lookup_user(api_key)
     })
   elseif api_key["key_type"] == "token" and api_key["idp"] then
     ext_user, idp_err = idp.first(api_key)
+  elseif api_key["key_type"] == "token" and string.find(api_key["mode"], "cb_attr") then
+    -- CB-Attribute-based authorisation, no IDP authorisation, but JWT handled in idp.lua
+    ext_user, idp_err = idp.first(api_key)
   end
 
   -- Check if there are errors reading database or external user
@@ -111,6 +114,19 @@ local function lookup_user(api_key)
       else
         cache_computed_settings(user["settings"])
       end
+    end
+
+    -- For CB attribute based policies in JWT, Add extracted parameters from decoded JWT again
+    if api_key["key_type"] == "token" and string.find(api_key["mode"], "cb_attr") and ext_user then
+       user["iss"] = ext_user["iss"]
+       user["sub"] = ext_user["sub"]
+       user["aud"] = ext_user["aud"]
+       if ext_user["authorisation_registry"] then
+	  user["authorisation_registry"] = ext_user["authorisation_registry"]
+       end
+       if ext_user["delegation_evidence"] then
+	  user["delegation_evidence"] = ext_user["delegation_evidence"]
+       end
     end
 
     return user

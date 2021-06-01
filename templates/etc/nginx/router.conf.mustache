@@ -153,6 +153,8 @@ http {
   proxy_buffer_size {{nginx.proxy_buffer_size}};
   proxy_buffers {{nginx.proxy_buffers}};
 
+  large_client_header_buffers {{nginx.large_client_header_buffers}};
+
   {{#nginx.server_names_hash_bucket_size}}
     server_names_hash_bucket_size {{nginx.server_names_hash_bucket_size}};
   {{/nginx.server_names_hash_bucket_size}}
