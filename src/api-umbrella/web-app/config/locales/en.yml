@@ -335,107 +335,107 @@ en:
       month: Month
       fields:
         request_method:
-          label: 'Request: HTTP Method'
+          label: "Request: HTTP Method"
           description_markdown: |-
             The HTTP method of the request.
             *Example:* `GET`, `POST`, `PUT`, `DELETE`, etc.
         request_scheme:
-          label: 'Request: URL Scheme'
+          label: "Request: URL Scheme"
           description_markdown: |-
             The scheme of the original request URL.
             *Example:* `http` or `https`
         request_host:
-          label: 'Request: URL Host'
+          label: "Request: URL Host"
           description_markdown: |-
             The host of the original request URL.
             *Example:* `example.com`
         request_path:
-          label: 'Request: URL Path'
+          label: "Request: URL Path"
           description_markdown: |-
             The path portion of the original request URL.
             *Example:* `/geocode/v1.json`
         request_url:
-          label: 'Request: Full URL & Query String'
+          label: "Request: Full URL & Query String"
           description_markdown: |-
             The original, complete request URL.
             *Example:* `http://example.com/geocode/v1.json?address=1617+Cole+Blvd+Golden+CO`
             *Note:* If you want to simply filter on the host or path portion of the URL, your queries will run better if you use the separate "Request: URL Path" or "Request: URL Host" fields.
         request_ip:
-          label: 'Request: IP Address'
+          label: "Request: IP Address"
           description_markdown: |-
             The IP address of the requestor.
             *Example:* `93.184.216.119`
         request_ip_country:
-          label: 'Request: IP Country'
+          label: "Request: IP Country"
           description_markdown: |-
             The 2 letter country code (<a href="http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2" target="_blank">ISO 3166-1</a>) that the IP address geocoded to.
             *Example:* `US`
         request_ip_region:
-          label: 'Request: IP State/Region'
+          label: "Request: IP State/Region"
           description_markdown: |-
             The 2 letter state or region code (<a href="http://en.wikipedia.org/wiki/ISO_3166-2" target="_blank">ISO 3166-2</a>) that the IP address geocoded to.
             *Example:* `CO`
         request_ip_city:
-          label: 'Request: IP City'
+          label: "Request: IP City"
           description_markdown: |-
             The name of the city that the IP address geocoded to.
             *Example:* `Golden`
         request_user_agent:
-          label: 'Request: User Agent'
+          label: "Request: User Agent"
           description_markdown: |-
             The full user agent string of the requestor.
             *Example:* `curl/7.33.0`
         request_user_agent_family:
-          label: 'Request: User Agent Family'
+          label: "Request: User Agent Family"
           description_markdown: |-
             The overall family of the user agent.
             *Example:* `Chrome`
         request_user_agent_type:
-          label: 'Request: User Agent Type'
+          label: "Request: User Agent Type"
           description_markdown: |-
             The type of user agent.
             *Example:* `Browser`
         request_referer:
-          label: 'Request: Referer'
+          label: "Request: Referer"
           description_markdown: |-
             The `Referer` header sent on the request
             *Example:* `https://example.com/foo`
         request_origin:
-          label: 'Request: Origin'
+          label: "Request: Origin"
           description_markdown: |-
             The `Origin` header sent on the request
             *Example:* `https://example.com`
         api_key:
-          label: 'User: API Key'
+          label: "User: API Key"
           description_markdown: |-
             The API key used to make the request.
             *Example:* `vfcHB9tOyFKc6YbbdDsE8plxtFHvp9zXIJWAtaep`
         user_email:
-          label: 'User: E-mail'
+          label: "User: E-mail"
           description_markdown: |-
             The e-mail address associated with the API key used to make the request.
             *Example:* `john.doe@example.com`
         user_id:
-          label: 'User: ID'
+          label: "User: ID"
           description_markdown: |-
             The user ID associated with the API key used to make the request.
             *Example:* `ad2d94b6-e0f8-4e26-b1a6-1bc6b12f3d76`
         response_status:
-          label: 'Response: HTTP Status Code'
+          label: "Response: HTTP Status Code"
           description_markdown: |-
             The HTTP status code returned for the response.
             *Example:* `200`, `403`, `429`, etc.
         gatekeeper_denied_code:
-          label: 'Response: API Umbrella Denied Code'
+          label: "Response: API Umbrella Denied Code"
           description_markdown: |-
             If API Umbrella is responsible for blocking the request, this code value describes the reason for the block.
             *Example:* `api_key_missing`, `over_rate_limit`, etc.
         response_time:
-          label: 'Response: Load Time'
+          label: "Response: Load Time"
           description_markdown: |-
             The total amount of time taken to respond to the request (in milliseconds)
         response_content_type:
-          label: 'Response: Content Type'
+          label: "Response: Content Type"
           description_markdown: |-
             The content type of the response.
             *Example:* `application/json; charset=utf-8`

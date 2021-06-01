@@ -9,14 +9,14 @@ it:
     google_oauth2: Google
   errors:
     messages:
-      invalid_host_format: "deve essere nel formato \"esempio.com\""
-      invalid_url_prefix_format: "deve iniziare con \"/\""
+      invalid_host_format: 'deve essere nel formato "esempio.com"'
+      invalid_url_prefix_format: 'deve iniziare con "/"'
       admin_not_authorized: |-
-          Non sei autorizzato ad effettuare questa azione. Sei unicamente autorizzato ad effettuare azioni per le API nelle seguenti aree:
+        Non sei autorizzato ad effettuare questa azione. Sei unicamente autorizzato ad effettuare azioni per le API nelle seguenti aree:
 
-          %{authorized_scopes_list}
+        %{authorized_scopes_list}
 
-          Contatta l'amministratore delle tue Umbrella API se hai bisogno di accedere a nuove API.
+        Contatta l'amministratore delle tue Umbrella API se hai bisogno di accedere a nuove API.
   mongoid:
     attributes:
       api:
@@ -46,7 +46,7 @@ it:
         frontend_prefix: "Prefisso Front-End"
   admin:
     errors:
-      host_format: "Deve essere nel formato \"esempio.com\""
+      host_format: 'Deve essere nel formato "esempio.com"'
     edit: Modifica
     remove: Rimuovi
     reorder: Riordina
@@ -76,7 +76,7 @@ it:
         legend: Back-End
         server: Server
         note: "Definisci il server dove l'API è ospitata. Server multipli possono essere definiti per effettuare un bilanciamento del carico."
-        empty_list: "Non sono stati ancora definiti server di back-end. Clicca \"%{add}\" sotto per iniziare."
+        empty_list: 'Non sono stati ancora definiti server di back-end. Clicca "%{add}" sotto per iniziare.'
         add: "Aggiungi Server"
       host:
         legend: Sito
@@ -84,12 +84,12 @@ it:
       url_matches:
         legend: "Prefissi URL risultanti"
         note: "Quali prefissi URL dovrebbero essere diretti a questo back-end?"
-        empty_list: "Nessun risultato per prefissi URL è stato ancora aggiunto. Clicca \"%{add}\" sotto per iniziare."
+        empty_list: 'Nessun risultato per prefissi URL è stato ancora aggiunto. Clicca "%{add}" sotto per iniziare.'
         add: "Aggiungi Prefisso URL"
       rewrites:
         legend: "Riscrittura Avanzata Richieste"
         note: "Modifica l'URL o le instestazioni della richiesta in arrivo prima di passarla al back-end."
-        empty_list: "Nessuna riscrittura delle richieste è stata ancora aggiunta. Clicca \"%{add}\" sotto per iniziare."
+        empty_list: 'Nessuna riscrittura delle richieste è stata ancora aggiunta. Clicca "%{add}" sotto per iniziare.'
         add: "Aggiungi Riscrittura"
       sub_settings:
         legend: "Opzioni Richiesta Sotto-URL"

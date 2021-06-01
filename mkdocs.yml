@@ -1,0 +1,56 @@
+site_name: API Umbrella
+site_url: https://fiware-api-umbrella.readthedocs.org
+repo_url: https://github.com/fiware/api-umbrella
+site_description: IoT Agent for SigFox Documentation
+docs_dir: docs
+site_dir: html
+edit_uri: edit/master/docs/
+markdown_extensions: [toc, fenced_code]
+use_directory_urls: false
+theme: readthedocs
+extra_css:
+  [
+    "https://www.fiware.org/style/fiware_readthedocs.css",
+    "https://www.fiware.org/style/fiware_readthedocs_security.css",
+  ]
+#google_analytics: ['UA-83236805-2', 'fiware-api-umbrella.readthedocs.io']
+pages:
+  - Home: "index.md"
+  # - "User & Programmers Manual":
+  #     - "API Walkthrough & Development intro": "usermanual.md"
+  # - "Installation & Administration Manual":
+  #     - "Installation Guide": "installationguide.md"
+
+  - "Getting Started": "getting-started.md"
+  - "For Admin Users":
+      - Caching: admin/api-backends/caching.md
+      - HTTP Headers: admin/api-backends/http-headers.md
+      - Role Restrictions: admin/api-backends/role-restrictions.md
+      - Roles: admin/api-users/roles.md
+      - Permissions: admin/admin-accounts/permissions.md
+      - Website Backends: admin/website-backends.md
+      - API: admin/api.md
+      - Other Documentation: admin/other-docs.md
+  - "For System Admins":
+      - Admin Authentication: server/admin-auth.md
+      - HTTPS Configuration: server/https-config.md
+      - SMTP Configuration: server/smtp-config.md
+      - Multi-Server Setup: server/multi-server.md
+      - HTTP/HTTPS Listen Ports: server/listen-ports.md
+      - Log Files: server/logs.md
+      - Database Configuration: server/db-config.md
+
+  - "For API Consumers":
+      - API Key Usage: api-consumer/api-key-usage.md
+      - Rate Limits: api-consumer/rate-limits.md
+
+  - "For API Umbrella Developers":
+      - Architecture: developer/architecture.md
+      - Development Setup: developer/dev-setup.md
+      - Testing: developer/testing.md
+      - Deploying From Git: developer/deploying.md
+      - Building Binary Packages: developer/packaging.md
+      - Building Docker Images: developer/docker-build.md
+      - Compiling From Source: developer/compiling-from-source.md
+      - Release Process: developer/release-process.md
+      - Analytics Architecture: developer/analytics-architecture.md

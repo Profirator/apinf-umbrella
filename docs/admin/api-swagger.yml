@@ -81,13 +81,13 @@ paths:
 
         This API's query parameters and responses are intended to be compatible with the [DataTables server-side processing API](https://datatables.net/manual/server-side).
       parameters:
-        - $ref: '#/parameters/datatables-start'
-        - $ref: '#/parameters/datatables-length'
-        - $ref: '#/parameters/datatables-search-value'
-        - $ref: '#/parameters/datatables-order-column'
-        - $ref: '#/parameters/datatables-order-dir'
-        - $ref: '#/parameters/datatables-columns-data'
-        - $ref: '#/parameters/datatables-columns-name'
+        - $ref: "#/parameters/datatables-start"
+        - $ref: "#/parameters/datatables-length"
+        - $ref: "#/parameters/datatables-search-value"
+        - $ref: "#/parameters/datatables-order-column"
+        - $ref: "#/parameters/datatables-order-dir"
+        - $ref: "#/parameters/datatables-columns-data"
+        - $ref: "#/parameters/datatables-columns-name"
       responses:
         200:
           description: Successful response
@@ -104,7 +104,7 @@ paths:
               data:
                 type: array
                 items:
-                  $ref: '#/definitions/AdminGroup'
+                  $ref: "#/definitions/AdminGroup"
     post:
       tags:
         - admin_group
@@ -144,7 +144,7 @@ paths:
             properties:
               admin_group:
                 type: object
-                $ref: '#/definitions/AdminGroup'
+                $ref: "#/definitions/AdminGroup"
     put:
       tags:
         - admin_group
@@ -205,13 +205,13 @@ paths:
 
         This API's query parameters and responses are intended to be compatible with the [DataTables server-side processing API](https://datatables.net/manual/server-side).
       parameters:
-        - $ref: '#/parameters/datatables-start'
-        - $ref: '#/parameters/datatables-length'
-        - $ref: '#/parameters/datatables-search-value'
-        - $ref: '#/parameters/datatables-order-column'
-        - $ref: '#/parameters/datatables-order-dir'
-        - $ref: '#/parameters/datatables-columns-data'
-        - $ref: '#/parameters/datatables-columns-name'
+        - $ref: "#/parameters/datatables-start"
+        - $ref: "#/parameters/datatables-length"
+        - $ref: "#/parameters/datatables-search-value"
+        - $ref: "#/parameters/datatables-order-column"
+        - $ref: "#/parameters/datatables-order-dir"
+        - $ref: "#/parameters/datatables-columns-data"
+        - $ref: "#/parameters/datatables-columns-name"
       responses:
         200:
           description: Successful response
@@ -228,7 +228,7 @@ paths:
               data:
                 type: array
                 items:
-                  $ref: '#/definitions/Admin'
+                  $ref: "#/definitions/Admin"
     post:
       tags:
         - admin
@@ -268,7 +268,7 @@ paths:
             properties:
               admin:
                 type: object
-                $ref: '#/definitions/Admin'
+                $ref: "#/definitions/Admin"
     put:
       tags:
         - admin
@@ -381,13 +381,13 @@ paths:
 
         This API's query parameters and responses are intended to be compatible with the [DataTables server-side processing API](https://datatables.net/manual/server-side).
       parameters:
-        - $ref: '#/parameters/datatables-start'
-        - $ref: '#/parameters/datatables-length'
-        - $ref: '#/parameters/datatables-search-value'
-        - $ref: '#/parameters/datatables-order-column'
-        - $ref: '#/parameters/datatables-order-dir'
-        - $ref: '#/parameters/datatables-columns-data'
-        - $ref: '#/parameters/datatables-columns-name'
+        - $ref: "#/parameters/datatables-start"
+        - $ref: "#/parameters/datatables-length"
+        - $ref: "#/parameters/datatables-search-value"
+        - $ref: "#/parameters/datatables-order-column"
+        - $ref: "#/parameters/datatables-order-dir"
+        - $ref: "#/parameters/datatables-columns-data"
+        - $ref: "#/parameters/datatables-columns-name"
       responses:
         200:
           description: Successful response
@@ -404,7 +404,7 @@ paths:
               data:
                 type: array
                 items:
-                  $ref: '#/definitions/ApiScope'
+                  $ref: "#/definitions/ApiScope"
     post:
       tags:
         - api_scope
@@ -444,7 +444,7 @@ paths:
             properties:
               api_scope:
                 type: object
-                $ref: '#/definitions/ApiScope'
+                $ref: "#/definitions/ApiScope"
     put:
       tags:
         - api_scope
@@ -480,13 +480,13 @@ paths:
 
         This API's query parameters and responses are intended to be compatible with the [DataTables server-side processing API](https://datatables.net/manual/server-side).
       parameters:
-        - $ref: '#/parameters/datatables-start'
-        - $ref: '#/parameters/datatables-length'
-        - $ref: '#/parameters/datatables-search-value'
-        - $ref: '#/parameters/datatables-order-column'
-        - $ref: '#/parameters/datatables-order-dir'
-        - $ref: '#/parameters/datatables-columns-data'
-        - $ref: '#/parameters/datatables-columns-name'
+        - $ref: "#/parameters/datatables-start"
+        - $ref: "#/parameters/datatables-length"
+        - $ref: "#/parameters/datatables-search-value"
+        - $ref: "#/parameters/datatables-order-column"
+        - $ref: "#/parameters/datatables-order-dir"
+        - $ref: "#/parameters/datatables-columns-data"
+        - $ref: "#/parameters/datatables-columns-name"
       responses:
         200:
           description: Successful response
@@ -503,7 +503,7 @@ paths:
               data:
                 type: array
                 items:
-                  $ref: '#/definitions/Api'
+                  $ref: "#/definitions/Api"
     post:
       tags:
         - api
@@ -543,7 +543,7 @@ paths:
             properties:
               admin:
                 type: object
-                $ref: '#/definitions/Api'
+                $ref: "#/definitions/Api"
     put:
       tags:
         - api
@@ -588,9 +588,9 @@ paths:
                 type: object
                 properties:
                   apis:
-                    $ref: '#/definitions/ConfigDiffGroup'
+                    $ref: "#/definitions/ConfigDiffGroup"
                   website_backends:
-                    $ref: '#/definitions/ConfigDiffGroup'
+                    $ref: "#/definitions/ConfigDiffGroup"
   /api-umbrella/v1/config/publish:
     post:
       tags:
@@ -610,9 +610,9 @@ paths:
                 type: object
                 properties:
                   apis:
-                    $ref: '#/definitions/ConfigPublish'
+                    $ref: "#/definitions/ConfigPublish"
                   website_backends:
-                    $ref: '#/definitions/ConfigPublish'
+                    $ref: "#/definitions/ConfigPublish"
       responses:
         201:
           description: Successfully published changes
@@ -685,13 +685,13 @@ paths:
 
         This API's query parameters and responses are intended to be compatible with the [DataTables server-side processing API](https://datatables.net/manual/server-side).
       parameters:
-        - $ref: '#/parameters/datatables-start'
-        - $ref: '#/parameters/datatables-length'
-        - $ref: '#/parameters/datatables-search-value'
-        - $ref: '#/parameters/datatables-order-column'
-        - $ref: '#/parameters/datatables-order-dir'
-        - $ref: '#/parameters/datatables-columns-data'
-        - $ref: '#/parameters/datatables-columns-name'
+        - $ref: "#/parameters/datatables-start"
+        - $ref: "#/parameters/datatables-length"
+        - $ref: "#/parameters/datatables-search-value"
+        - $ref: "#/parameters/datatables-order-column"
+        - $ref: "#/parameters/datatables-order-dir"
+        - $ref: "#/parameters/datatables-columns-data"
+        - $ref: "#/parameters/datatables-columns-name"
       responses:
         200:
           description: Successful response
@@ -708,7 +708,7 @@ paths:
               data:
                 type: array
                 items:
-                  $ref: '#/definitions/User'
+                  $ref: "#/definitions/User"
     post:
       tags:
         - user
@@ -748,7 +748,7 @@ paths:
             properties:
               user:
                 type: object
-                $ref: '#/definitions/User'
+                $ref: "#/definitions/User"
     put:
       tags:
         - user
@@ -784,13 +784,13 @@ paths:
 
         This API's query parameters and responses are intended to be compatible with the [DataTables server-side processing API](https://datatables.net/manual/server-side).
       parameters:
-        - $ref: '#/parameters/datatables-start'
-        - $ref: '#/parameters/datatables-length'
-        - $ref: '#/parameters/datatables-search-value'
-        - $ref: '#/parameters/datatables-order-column'
-        - $ref: '#/parameters/datatables-order-dir'
-        - $ref: '#/parameters/datatables-columns-data'
-        - $ref: '#/parameters/datatables-columns-name'
+        - $ref: "#/parameters/datatables-start"
+        - $ref: "#/parameters/datatables-length"
+        - $ref: "#/parameters/datatables-search-value"
+        - $ref: "#/parameters/datatables-order-column"
+        - $ref: "#/parameters/datatables-order-dir"
+        - $ref: "#/parameters/datatables-columns-data"
+        - $ref: "#/parameters/datatables-columns-name"
       responses:
         200:
           description: Successful response
@@ -807,7 +807,7 @@ paths:
               data:
                 type: array
                 items:
-                  $ref: '#/definitions/WebsiteBackend'
+                  $ref: "#/definitions/WebsiteBackend"
     post:
       tags:
         - website_backend
@@ -847,7 +847,7 @@ paths:
             properties:
               website_backend:
                 type: object
-                $ref: '#/definitions/WebsiteBackend'
+                $ref: "#/definitions/WebsiteBackend"
     put:
       tags:
         - website_backend
@@ -975,7 +975,19 @@ definitions:
         enum: ["route", "regex"]
       http_method:
         type: string
-        enum: ["any", "GET", "POST", "PUT", "DELETE", "HEAD", "TRACE", "OPTIONS", "CONNECT", "PATCH"]
+        enum:
+          [
+            "any",
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "HEAD",
+            "TRACE",
+            "OPTIONS",
+            "CONNECT",
+            "PATCH",
+          ]
       frontend_matcher:
         type: string
       backend_replacement:
@@ -1092,7 +1104,19 @@ definitions:
         readOnly: true
       http_method:
         type: string
-        enum: ["any", "GET", "POST", "PUT", "DELETE", "HEAD", "TRACE", "OPTIONS", "CONNECT", "PATCH"]
+        enum:
+          [
+            "any",
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "HEAD",
+            "TRACE",
+            "OPTIONS",
+            "CONNECT",
+            "PATCH",
+          ]
       regex:
         type: string
       settings:
@@ -1259,9 +1283,9 @@ definitions:
         type: object
         properties:
           apis:
-            $ref: '#/definitions/Api'
+            $ref: "#/definitions/Api"
           website_backends:
-            $ref: '#/definitions/WebsiteBackend'
+            $ref: "#/definitions/WebsiteBackend"
       created_at:
         $ref: "#/definitions/CreatedAt"
       updated_at:

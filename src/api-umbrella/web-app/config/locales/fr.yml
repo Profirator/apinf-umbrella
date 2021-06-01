@@ -9,14 +9,14 @@ fr:
     google_oauth2: Google
   errors:
     messages:
-      invalid_host_format: "format à respecter : \"example.com\""
-      invalid_url_prefix_format: "doit commencer avec un \"/\""
+      invalid_host_format: 'format à respecter : "example.com"'
+      invalid_url_prefix_format: 'doit commencer avec un "/"'
       admin_not_authorized: |-
-          Vous n'avez pas l'autorisation d'effectuer cette opération. Seules celles appartenant aux groupes suivants sont autorisées :
+        Vous n'avez pas l'autorisation d'effectuer cette opération. Seules celles appartenant aux groupes suivants sont autorisées :
 
-          %{authorized_scopes_list}
+        %{authorized_scopes_list}
 
-          Contactez votre administrateur si vous souhaitez avoir accès à d'autres APIs.
+        Contactez votre administrateur si vous souhaitez avoir accès à d'autres APIs.
   mongoid:
     attributes:
       api:
@@ -46,7 +46,7 @@ fr:
         frontend_prefix: "Préfixe front-end"
   admin:
     errors:
-      host_format: "Format à respecter : \"example.com\""
+      host_format: 'Format à respecter : "example.com"'
     edit: Modifier
     remove: Supprimer
     reorder: "Changer l'ordre"
@@ -76,7 +76,7 @@ fr:
         legend: Back-end
         server: Serveur
         note: "Entrez les détails du serveur d'API. Vous pouvez en ajouter plusieurs, pour répartir la charge entre eux."
-        empty_list: "Aucun serveur d'API enregistré. Cliquez \"%{add}\" pour commencer."
+        empty_list: 'Aucun serveur d''API enregistré. Cliquez "%{add}" pour commencer.'
         add: "Ajouter un serveur"
       host:
         legend: Hôte
@@ -84,12 +84,12 @@ fr:
       url_matches:
         legend: "Préfixes correspondants"
         note: "Quels préfixes doivent être dirigés vers ce backend ?"
-        empty_list: "Aucun préfixe d'URL enregistré. Cliquez \"%{add}\" pour commencer."
+        empty_list: 'Aucun préfixe d''URL enregistré. Cliquez "%{add}" pour commencer.'
         add: "Ajouter un préfixe"
       rewrites:
         legend: "Réécriture avancée des requêtes"
         note: "Modifier les URL ou Headers des requêtes avant leur transfert aux APIs."
-        empty_list: "Aucune règle de réécriture enregistrée. Cliquez \"%{add}\" pour commencer."
+        empty_list: 'Aucune règle de réécriture enregistrée. Cliquez "%{add}" pour commencer.'
         add: "Ajouter une règle"
       sub_settings:
         legend: "Réécriture des composants d'URL"
