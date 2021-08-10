@@ -72,7 +72,7 @@ local function build_log_data()
 end
 
 local function log_request()
-  if config["rsyslog"]["disableRequestLogging"] then
+  if config["rsyslog"]["disable_request_logging"] == true then
     return
   end
   -- Build the log message and send to rsyslog for processing.

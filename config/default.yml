@@ -173,7 +173,7 @@ auto_ssl:
   hook_server:
     port: 14007
 rsyslog:
-  enable_req_log: true
+  disable_request_logging: false
   host: 127.0.0.1
   port: 14014
 log:
