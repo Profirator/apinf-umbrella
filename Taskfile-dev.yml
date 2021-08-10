@@ -222,11 +222,8 @@ tasks:
   deps:
     cmds:
       - task: deps:bundler
-      - task: deps:elasticsearch
-      - task: deps:geolitecity
       - task: deps:libcidr
       - task: deps:luarocks
-      - task: deps:mongodb
       - task: deps:mora
       - task: deps:openresty
       - task: deps:perp

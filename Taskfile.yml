@@ -202,7 +202,6 @@ tasks:
   deps:
     cmds:
       - task: deps:bundler
-      - task: deps:geolitecity
       - task: deps:libcidr
       - task: deps:luarocks
       - task: deps:mora

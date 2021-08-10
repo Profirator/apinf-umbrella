@@ -1,6 +1,6 @@
 FROM ubuntu:18.04 AS build
 
-ARG MAXMIND_LICENSE_KEY_ARG=myKey
+ARG MAXMIND_LICENSE_KEY_ARG
 
 ENV MAXMIND_LICENSE_KEY $MAXMIND_LICENSE_KEY_ARG
 
@@ -26,6 +26,9 @@ RUN ./configure
 COPY build/patches /app/build/patches
 COPY tasks/deps /app/tasks/deps
 COPY tasks/clean/dev /app/tasks/clean/dev
+
+RUN if [[ -n "$MAXMIND_LICENSE_KEY_ARG" ]] ; then make deps:geolitecity ; else echo "If you want to use the geoIp-feature, please provide a valid license key." ; fi
+
 RUN make deps && make clean:dev
 
 COPY tasks/build-deps /app/tasks/build-deps
