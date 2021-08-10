@@ -47,8 +47,6 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:${VERSION}
           file: Dockerfile-build
-          build-args: |
-            MAXMIND_LICENSE_KEY_ARG=${{ secrets.MAXMIND_LICENSE_KEY }}
 
 
       - name: Set version output
