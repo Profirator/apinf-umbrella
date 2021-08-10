@@ -23,7 +23,7 @@ The following configuration deactivate the request logs:
 
 ```yaml
 rsyslog:
-  disableRequestLogging: true
+  disable_request_logging: true
 ``` 
 
 **trafficserver**
@@ -33,7 +33,7 @@ To disable the request logging, no format should be set.
 
 ```yaml
 trafficserver:
-      logFormat:
+      log_format:
 ```
 
 **nginx**
