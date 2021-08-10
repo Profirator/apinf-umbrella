@@ -13,4 +13,4 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Run tests on docker
-        run: docker-compose run --build-arg MAXMIND_LICENSE_KEY_ARG=${{ secrets.MAXMIND_LICENSE_KEY }} --rm app make test
+        run: docker-compose run  app make test --build-arg MAXMIND_LICENSE_KEY_ARG=${{ secrets.MAXMIND_LICENSE_KEY }}
