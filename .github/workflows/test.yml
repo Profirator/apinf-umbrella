@@ -16,4 +16,4 @@ jobs:
         run: docker build -f Dockerfile-build --build-arg MAXMIND_LICENSE_KEY_ARG=${{ secrets.MAXMIND_LICENSE_KEY }} -t test-image .
 
       - name: Run tests on docker
-        run: docker run test-image app make test -e
+        run: docker run test-image app make test
