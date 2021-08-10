@@ -82,7 +82,7 @@ trafficserver:
   embedded_server_config:
     records: []
   # currently only extended_custom supported, leave empty to disable request logging
-  logFormat: extended_custom
+  log_format: extended_custom
 api_server:
   host: 127.0.0.1
   port: 14010
