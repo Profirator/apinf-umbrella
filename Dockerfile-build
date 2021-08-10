@@ -1,6 +1,8 @@
 FROM ubuntu:18.04 AS build
 
-ENV MAXMIND_LICENSE_KEY <LICENSE>
+ARG MAXMIND_LICENSE_KEY_ARG=myKey
+
+ENV MAXMIND_LICENSE_KEY $MAXMIND_LICENSE_KEY_ARG
 
 RUN mkdir -p /app/build /build/.task /build/build/work
 RUN ln -snf /build/.task /app/.task
