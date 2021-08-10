@@ -16,4 +16,4 @@ jobs:
         run: docker build -f Dockerfile-build -t test-image .
 
       - name: Run tests on docker
-        run: docker run test-image app make test
+        run: docker run test-image make test
