@@ -22,7 +22,6 @@ if [ -z "${API_UMBRELLA_DB_DIR:-}" ]; then
   exit 1
 fi
 
-download_url="https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
 frequency=86400 # Sleep for 1 day between runs
 
 while true; do
@@ -40,8 +39,8 @@ while true; do
   echo "Downloading new file..."
   unzip_dir=$(mktemp -d -t api-umbrella-geoip-auto-updater.XXXXXXXXXX)
   download_path="$unzip_dir.gz"
-  if ! curl --silent --show-error --fail --location --retry 3 --output "$download_path" "$download_url"; then
-    echo "Error downloading $download_url"
+  if ! curl --silent --show-error --fail --location --retry 3 --output "$download_path" "${MAXMIND_DOWNLOAD_URL}?edition_id=${MAXMIND_EDITION_ID}&suffix=tar.gz&license_key=${MAXMIND_LICENSE_KEY}"; then
+    echo "Error downloading ${MAXMIND_DOWNLOAD_URL}"
   else
     # Un-gzip the downloaded file.
     if ! tar -xf "$download_path" -C "$unzip_dir" --strip-components 1; then

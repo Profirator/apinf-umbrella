@@ -761,6 +761,13 @@ tasks:
     cmds:
       - ./tasks/distclean
 
+  test:
+    deps:
+      - all
+      - test-deps
+    cmds:
+      - unbuffer ./tasks/test/default
+
   install:
     cmds:
       - ./tasks/install
