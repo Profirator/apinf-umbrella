@@ -222,14 +222,16 @@ tasks:
   deps:
     cmds:
       - task: deps:bundler
+      - task: deps:elasticsearch
       - task: deps:libcidr
       - task: deps:luarocks
+      - task: deps:mongodb
       - task: deps:mora
       - task: deps:openresty
       - task: deps:perp
       - task: deps:rsyslog
       - task: deps:runit_svlogd
-      - task: deps:trafficserver
+      - task: perp
 
   build-deps:nodejs:
     cmds:

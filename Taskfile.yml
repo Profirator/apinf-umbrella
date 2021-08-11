@@ -762,9 +762,6 @@ tasks:
       - ./tasks/distclean
 
   test:
-    deps:
-      - all
-      - test-deps
     cmds:
       - unbuffer ./tasks/test/default
 

@@ -41,3 +41,21 @@ The analytic APIs in the web application directly query Elasticsearch:
 ```text
 [api-umbrella-web-app] => [Elasticsearch]
 ```
+
+## GeoIP
+
+To capture geographic information about the requesting IP addresses, the [NGINX-GeoIP2 module](https://docs.nginx.com/nginx/admin-guide/dynamic-modules/geoip2/) 
+can be used. This module requires a [GeoIP database provided maxmind](https://www.maxmind.com/en/geoip2-databases). In order to comply with 
+its license conditions, the feature is deactivated in the default image and no such database is included.
+
+To use the feature, the following steps needs to be done:
+* decide on the required [database and license](https://dev.maxmind.com/geoip/geolocate-an-ip?lang=en)
+* register a license key
+* build the api-umbrella docker image with the command: 
+    
+    ```docker build -f Dockerfile-build --build-arg MAXMIND_LICENSE_KEY_ARG=<REGISTERED_LICENSE_KEY> --build-arg MAXMIND_EDITION_ID_ARG=<DATABASE_ID> .```
+* enable the GeoIP feature in the config:
+    ```yaml
+    nginx:
+      geoip: on
+```

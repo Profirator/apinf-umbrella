@@ -3,7 +3,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile-build
+      dockerfile: Dockerfile-dev
     volumes:
       - .:/app
       - build_cache:/build
@@ -13,9 +13,16 @@ services:
     ports:
       - "8888:8888"
       - "8443:8443"
+    networks:
+      main:
+        aliases:
+          - umbrella.docker
 
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
+networks:
+  main:
+    external: true
 
 volumes:
   build_cache:

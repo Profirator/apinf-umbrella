@@ -12,17 +12,14 @@
 To build packages for the current API Umbrella version:
 
 ```bash
-$ git clone https://github.com/NREL/api-umbrella.git
-$ cd api-umbrella/docker
-$ docker build -t nrel/api-umbrella:INSERT_VERSION_HERE .
-$ docker tag nrel/api-umbrella:INSERT_VERSION_HERE nrel/api-umbrella:latest
+$ git clone https://github.com/FIWARE/api-umbrella.git
+$ docker build -f Dockerfile-build -t fiware/api-umbrella:INSERT_VERSION_HERE .
 ```
 
 ## Pushing to Docker Hub
 
-To publish the new images to our [Docker Hub repository](https://hub.docker.com/r/nrel/api-umbrella/):
+To publish the new images to our [Docker Hub repository](https://hub.docker.com/r/fiware/api-umbrella/):
 
 ```bash
-$ docker push nrel/api-umbrella:INSERT_VERSION_HERE
-$ docker push nrel/api-umbrella:latest
+$ docker push fiware/api-umbrella:INSERT_VERSION_HERE
 ```
