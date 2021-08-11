@@ -680,6 +680,10 @@ tasks:
       - ./build/work/stamp/deps/mongodb
     method: checksum
 
+  test-deps:eslint:
+    cmds:
+      - ./tasks/test-deps/eslint
+
   test-deps:mongo-orchestration:
     cmds:
       - ./tasks/test-deps/mongo-orchestration
@@ -762,6 +766,8 @@ tasks:
       - unbuffer ./tasks/lint/shell
 
   lint:
+    deps:
+      - test-deps:eslint
     cmds:
       - task: lint:js
       - task: lint:lua

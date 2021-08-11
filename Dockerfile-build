@@ -40,8 +40,6 @@ RUN make build-deps && make clean:dev
 
 COPY Gemfile /app/Gemfile
 COPY Gemfile.lock /app/Gemfile.lock
-COPY tasks/test-deps /app/tasks/test-deps
-RUN make test-deps && make clean:dev
 
 COPY src/api-umbrella/admin-ui/.yarnrc /app/src/api-umbrella/admin-ui/.yarnrc
 COPY src/api-umbrella/admin-ui/package.json /app/src/api-umbrella/admin-ui/package.json

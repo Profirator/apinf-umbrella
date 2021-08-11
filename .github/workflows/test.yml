@@ -16,6 +16,7 @@ jobs:
         run: docker build -f Dockerfile-build -t test-image .
 
       - name: Lint
+        continue-on-error: true
         run: docker run test-image make lint
 
       - name: Run tests on docker
