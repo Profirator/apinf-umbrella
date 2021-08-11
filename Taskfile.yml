@@ -660,6 +660,26 @@ tasks:
       - ./build/work/stamp/test-deps/mailhog
     method: checksum
 
+  test-deps:elasticsearch:
+    cmds:
+      - ./tasks/deps/elasticsearch
+    sources:
+      - ./tasks/deps/elasticsearch
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/deps/elasticsearch
+    method: checksum
+
+  test-deps:mongodb:
+    cmds:
+      - ./tasks/deps/mongodb
+    sources:
+      - ./tasks/deps/mongodb
+      - ./tasks/helpers.sh
+    generates:
+      - ./build/work/stamp/deps/mongodb
+    method: checksum
+
   test-deps:mongo-orchestration:
     cmds:
       - ./tasks/test-deps/mongo-orchestration
@@ -762,6 +782,9 @@ tasks:
       - ./tasks/distclean
 
   test:
+    deps:
+      - test-deps:mongodb
+      - test-deps:elasticsearch
     cmds:
       - unbuffer ./tasks/test/default
 

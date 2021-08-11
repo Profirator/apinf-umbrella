@@ -15,5 +15,8 @@ jobs:
       - name: Build test image
         run: docker build -f Dockerfile-build -t test-image .
 
+      -name: Lint
+        run: docker run test-image make lint
+
       - name: Run tests on docker
         run: docker run test-image make test
