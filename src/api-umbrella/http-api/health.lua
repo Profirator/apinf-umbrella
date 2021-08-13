@@ -2,6 +2,7 @@ local config = require "api-umbrella.proxy.models.file_config"
 local elasticsearch_query = require("api-umbrella.utils.elasticsearch").query
 local http = require "resty.http"
 local json_encode = require "api-umbrella.utils.json_encode"
+local array_includes = require "api-umbrella.utils.array_includes"
 
 local function status_response(quick)
   local response = {
@@ -11,6 +12,8 @@ local function status_response(quick)
       api_users = "red",
     },
   }
+
+
 
   -- Check to see if the APIs have been loaded.
   if ngx.shared.active_config:get("db_config_last_fetched_at") then
@@ -30,58 +33,60 @@ local function status_response(quick)
     return response
   end
 
-  response["details"]["analytics_db"] = "red"
-  response["details"]["analytics_db_setup"] = "red"
-  response["details"]["web_app"] = "red"
-
   local httpc = http.new()
   httpc:set_timeout(3000)
 
-  -- Check the health of the ElasticSearch cluster
-  local res, err = elasticsearch_query("/_cluster/health")
-  if err then
-    ngx.log(ngx.ERR, "failed to fetch cluster health from elasticsearch: ", err)
-  elseif res.body_json then
-    local elasticsearch_health = res.body_json
-    response["details"]["analytics_db"] = elasticsearch_health["status"]
+  -- Check the health of the ElasticSearch cluster if its configured
+  if next(config["elasticsearch"]["hosts"]) ~= nil then
 
-    -- Check to see if the ElasticSearch index aliases have been setup.
-    local today = os.date("!%Y-%m", ngx.time())
-    local alias = "api-umbrella-logs-" .. today
-    local index = "api-umbrella-logs-v" .. config["elasticsearch"]["template_version"] .. "-" .. today
-    res, err = elasticsearch_query("/" .. index .. "/_alias/" .. alias)
+    response["details"]["analytics_db"] = "red"
+    response["details"]["analytics_db_setup"] = "red"
+
+    local res, err = elasticsearch_query("/_cluster/health")
     if err then
-      ngx.log(ngx.ERR, "failed to fetch elasticsearch alias details: ", err)
+      ngx.log(ngx.ERR, "failed to fetch cluster health from elasticsearch: ", err)
     elseif res.body_json then
-      local elasticsearch_alias = res.body_json
-      if not elasticsearch_alias["error"] then
-        response["details"]["analytics_db_setup"] = "green"
+      local elasticsearch_health = res.body_json
+      response["details"]["analytics_db"] = elasticsearch_health["status"]
+
+      -- Check to see if the ElasticSearch index aliases have been setup.
+      local today = os.date("!%Y-%m", ngx.time())
+      local alias = "api-umbrella-logs-" .. today
+      local index = "api-umbrella-logs-v" .. config["elasticsearch"]["template_version"] .. "-" .. today
+      res, err = elasticsearch_query("/" .. index .. "/_alias/" .. alias)
+      if err then
+        ngx.log(ngx.ERR, "failed to fetch elasticsearch alias details: ", err)
+      elseif res.body_json then
+        local elasticsearch_alias = res.body_json
+        if not elasticsearch_alias["error"] then
+          response["details"]["analytics_db_setup"] = "green"
+        end
       end
     end
+  else
+    response["details"]["analytics_db_setup"] = "green"
   end
 
-  res, err = httpc:request_uri("http://127.0.0.1:" .. config["web"]["port"] .. "/_web-app-health")
-  if err then
-    ngx.log(ngx.ERR, "failed to fetch web app: ", err)
-  elseif res.body then
-    response["details"]["web_app"] = "green"
-  end
+    -- check if web app is running
+    if array_includes(config["services"],"web") then
+      response["details"]["web_app"] = "red"
+      res, err = httpc:request_uri("http://127.0.0.1:" .. config["web"]["port"] .. "/_web-app-health")
+      if err then
+        ngx.log(ngx.ERR, "failed to fetch web app: ", err)
+      elseif res.body then
+        response["details"]["web_app"] = "green"
+      end
+    end
 
-  -- If everything looks good on the components, then mark our overall status a green.
-  --
-  -- Note: We accept ElasticSearch being in yellow status as long as the aliases
-  -- are setup, since on very first alias creation (but prior to indexing any
-  -- content), ElasticSearch seems to get stuck in the yellow status, even though
-  -- everything appears operational (but then it becomes green once content
-  -- starts indexing).
-  if response["details"]["apis_config"] == "green" and response["details"]["api_users"] == "green" and (response["details"]["analytics_db"] == "yellow" or response["details"]["analytics_db"] == "green") and response["details"]["analytics_db_setup"] == "green" and response["details"]["web_app"] == "green" then
-    response["status"] = "green"
-  elseif response["details"]["apis_config"] == "green" and response["details"]["api_users"] == "green" then
-    response["status"] = "yellow"
-  end
+    -- If everything looks good on the components, then mark our overall status a green.
+    if response["details"]["apis_config"] == "green" and response["details"]["api_users"] == "green" and response["details"]["analytics_db"] ~= "red" and response["details"]["analytics_db_setup"] ~= "red" and response["details"]["web_app"] ~= "red" then
+      response["status"] = "green"
+    elseif response["details"]["apis_config"] == "green" and response["details"]["api_users"] == "green" then
+      response["status"] = "yellow"
+    end
 
-  return response
-end
+    return response
+  end
 
 -- By default, check the health status and return it immediately.
 --
