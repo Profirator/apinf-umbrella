@@ -1,0 +1,16 @@
+FROM umbrella:base AS build
+
+COPY test /app/test
+COPY config/test-env.yml config/default.yml
+
+WORKDIR /app
+
+ENV INSTALL_TEST_DEPENDENCIES=true
+
+RUN groupadd -r api-umbrella && \
+  useradd -r -g api-umbrella -s /sbin/nologin -d /opt/api-umbrella -c "API Umbrella user" api-umbrella
+
+RUN /app/tasks/install-system-build-dependencies
+RUN make test-deps
+
+COPY config/test.yml config/test.yml

@@ -41,11 +41,13 @@ module ApiUmbrellaTestHelpers
         # layers of shells, which confuses what's the "original" environment.
         ENV.delete_if { |key, value| key =~ /\A(GEM_|BUNDLE_|BUNDLER_|RUBY)/ }
 
-        elasticsearch_test_api_version = nil
-        if ENV["ELASTICSEARCH_TEST_API_VERSION"]
-          elasticsearch_test_api_version = ENV["ELASTICSEARCH_TEST_API_VERSION"].to_i
+        # only handle elasticsearch if not provided externally
+        if ENV["ELASTICSEARCH_EMBEDDED"]
+            elasticsearch_test_api_version = nil
+            if ENV["ELASTICSEARCH_TEST_API_VERSION"]
+              elasticsearch_test_api_version = ENV["ELASTICSEARCH_TEST_API_VERSION"].to_i
+            end
         end
-
         # Read the initial test config file.
         $config = YAML.load_file(DEFAULT_CONFIG_PATH)
         $config.deep_merge!(YAML.load_file(CONFIG_PATH))
@@ -60,20 +62,25 @@ module ApiUmbrellaTestHelpers
           computed["user"] = "api-umbrella"
           computed["group"] = "api-umbrella"
         end
-        if elasticsearch_test_api_version
-          computed.deep_merge!({
-            "elasticsearch" => {
-              "api_version" => elasticsearch_test_api_version,
-              "embedded_server_config" => {
-                "path" => {
-                  "data" => File.join(TEST_RUN_API_UMBRELLA_ROOT, "var/db/elasticsearch#{elasticsearch_test_api_version}"),
-                  "logs" => File.join(TEST_RUN_API_UMBRELLA_ROOT, "var/log/elasticsearch#{elasticsearch_test_api_version}"),
+
+        # only handle elasticsearch if not provided externally
+        if ENV["ELASTICSEARCH_EMBEDDED"]
+            if elasticsearch_test_api_version
+              computed.deep_merge!({
+                "elasticsearch" => {
+                  "api_version" => elasticsearch_test_api_version,
+                  "embedded_server_config" => {
+                    "path" => {
+                      "data" => File.join(TEST_RUN_API_UMBRELLA_ROOT, "var/db/elasticsearch#{elasticsearch_test_api_version}"),
+                      "logs" => File.join(TEST_RUN_API_UMBRELLA_ROOT, "var/log/elasticsearch#{elasticsearch_test_api_version}"),
+                    },
+                  },
                 },
-              },
-            },
-            "services" => $config["services"] - ["log_db"],
-          })
+                "services" => $config["services"] - ["log_db"],
+              })
+            end
         end
+
         File.write(CONFIG_COMPUTED_PATH, YAML.dump(computed))
         $config.deep_merge!(YAML.load_file(CONFIG_COMPUTED_PATH))
 
@@ -92,37 +99,41 @@ module ApiUmbrellaTestHelpers
           exit build.exit_code
         end
 
-        # Optionally run a different version of Elasticsearch to the test suite
-        # can be tested against multiple versions of the database.
-        if elasticsearch_test_api_version
-          args = ["runtool"]
-          if($config["user"])
-            args += ["-u", $config["user"]]
-          end
-          args += ["elasticsearch"]
 
-          elasticsearch_config_dir = File.join(API_UMBRELLA_SRC_ROOT, "build/work/test-env/elasticsearch#{elasticsearch_test_api_version}/config")
-          FileUtils.mkdir_p($config["elasticsearch"]["embedded_server_config"]["path"]["logs"])
-          FileUtils.mkdir_p($config["elasticsearch"]["embedded_server_config"]["path"]["data"])
-          FileUtils.mkdir_p(File.join(elasticsearch_config_dir, "scripts"))
-          if(::Process.euid == 0)
-            FileUtils.chown($config["user"], nil, $config["elasticsearch"]["embedded_server_config"]["path"]["logs"])
-            FileUtils.chown($config["user"], nil, $config["elasticsearch"]["embedded_server_config"]["path"]["data"])
-            FileUtils.chmod_R("o+r", elasticsearch_config_dir)
-          end
-          log_file = File.open(File.join($config["elasticsearch"]["embedded_server_config"]["path"]["logs"], "current"), "w+")
-          log_file.sync = true
+        # only handle elasticsearch if not provided externally
+        if ENV["ELASTICSEARCH_EMBEDDED"]
+            # Optionally run a different version of Elasticsearch to the test suite
+            # can be tested against multiple versions of the database.
+            if elasticsearch_test_api_version
+              args = ["runtool"]
+              if($config["user"])
+                args += ["-u", $config["user"]]
+              end
+              args += ["elasticsearch"]
 
-          elasticsearch_config_path = File.join(elasticsearch_config_dir, "elasticsearch.yml")
-          File.open(elasticsearch_config_path, "w") { |f| f.write(YAML.dump($config["elasticsearch"]["embedded_server_config"])) }
+              elasticsearch_config_dir = File.join(API_UMBRELLA_SRC_ROOT, "build/work/test-env/elasticsearch#{elasticsearch_test_api_version}/config")
+              FileUtils.mkdir_p($config["elasticsearch"]["embedded_server_config"]["path"]["logs"])
+              FileUtils.mkdir_p($config["elasticsearch"]["embedded_server_config"]["path"]["data"])
+              FileUtils.mkdir_p(File.join(elasticsearch_config_dir, "scripts"))
+              if(::Process.euid == 0)
+                FileUtils.chown($config["user"], nil, $config["elasticsearch"]["embedded_server_config"]["path"]["logs"])
+                FileUtils.chown($config["user"], nil, $config["elasticsearch"]["embedded_server_config"]["path"]["data"])
+                FileUtils.chmod_R("o+r", elasticsearch_config_dir)
+              end
+              log_file = File.open(File.join($config["elasticsearch"]["embedded_server_config"]["path"]["logs"], "current"), "w+")
+              log_file.sync = true
 
-          $elasticsearch_process = ChildProcess.build(*args)
-          $elasticsearch_process.io.stdout = $elasticsearch_process.io.stderr = log_file
-          $elasticsearch_process.environment["PATH"] = "#{File.join(API_UMBRELLA_SRC_ROOT, "build/work/test-env/elasticsearch#{elasticsearch_test_api_version}/bin")}:#{ENV["PATH"]}"
-          $elasticsearch_process.environment["ES_PATH_CONF"] = elasticsearch_config_dir
-          $elasticsearch_process.environment["ES_JAVA_OPTS"] = "-Xms#{$config["elasticsearch"]["embedded_server_env"]["heap_size"]} -Xmx#{$config["elasticsearch"]["embedded_server_env"]["heap_size"]}"
-          $elasticsearch_process.leader = true
-          $elasticsearch_process.start
+              elasticsearch_config_path = File.join(elasticsearch_config_dir, "elasticsearch.yml")
+              File.open(elasticsearch_config_path, "w") { |f| f.write(YAML.dump($config["elasticsearch"]["embedded_server_config"])) }
+
+              $elasticsearch_process = ChildProcess.build(*args)
+              $elasticsearch_process.io.stdout = $elasticsearch_process.io.stderr = log_file
+              $elasticsearch_process.environment["PATH"] = "#{File.join(API_UMBRELLA_SRC_ROOT, "build/work/test-env/elasticsearch#{elasticsearch_test_api_version}/bin")}:#{ENV["PATH"]}"
+              $elasticsearch_process.environment["ES_PATH_CONF"] = elasticsearch_config_dir
+              $elasticsearch_process.environment["ES_JAVA_OPTS"] = "-Xms#{$config["elasticsearch"]["embedded_server_env"]["heap_size"]} -Xmx#{$config["elasticsearch"]["embedded_server_env"]["heap_size"]}"
+              $elasticsearch_process.leader = true
+              $elasticsearch_process.start
+            end
         end
 
         # Spin up API Umbrella and the embedded databases as a background

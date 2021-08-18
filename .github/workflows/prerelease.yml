@@ -1,15 +1,11 @@
-name: Pre-Release
+name: Pre-Release and Test
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
+  push:
 
 env:
+  BASE_IMAGE_NAME: fiware/api-umbrella-base
+  TEST_IMAGE_NAME: fiware/api-umbrella-test
   IMAGE_NAME: fiware/api-umbrella
 
 jobs:
@@ -20,24 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - id: bump
-        uses: zwaldowski/match-label-action@v1
-        with:
-          allowed: major,minor,patch
-
-      - uses: zwaldowski/semver-release-action@v2
-        with:
-          dry_run: true
-          bump: ${{ steps.bump.outputs.match }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get PR Number
-        id: pr_number
-        run: echo "::set-output name=nr::$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')"
-
-      - name: Set version output
-        id: out
-        run: echo "::set-output name=version::$(echo ${VERSION}-PRE-${{ steps.pr_number.outputs.nr }})"
+      - name: generate temporary tag
+        run: echo IMAGE_TAG=$(date +%s) >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -51,20 +31,28 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
-        id: docker_build
+      - name: Build base
+        id: docker_build_base
         uses: docker/build-push-action@v2
         with:
-          push: true
+          push: false
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.out.outputs.version }}
-          file: Dockerfile-build
-          build-args: |
-            MAXMIND_LICENSE_KEY_ARG=${{ secrets.MAXMIND_LICENSE_KEY }}
+            ${{ env.BASE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          file: Dockerfile-base
 
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Build test image
+        id: docker_build_test
+        uses: docker/build-push-action@v2
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ steps.out.outputs.version }}
-          prerelease: true
-          title: ${{ steps.out.outputs.version }}
+          push: false
+          tags: |
+            ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          file: Dockerfile-test
+
+      - name: Setup test env
+        run: |
+          docker-compose -f docker/compose/docker-compose.yaml up -d
+
+      - name: Run tests
+        run: |
+          docker run --network  test-network  ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} make test

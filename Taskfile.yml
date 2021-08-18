@@ -662,12 +662,12 @@ tasks:
 
   test-deps:elasticsearch:
     cmds:
-      - ./tasks/deps/elasticsearch
+      - ./tasks/test-deps/elasticsearch
     sources:
-      - ./tasks/deps/elasticsearch
+      - ./tasks/test-deps/elasticsearch
       - ./tasks/helpers.sh
     generates:
-      - ./build/work/stamp/deps/elasticsearch
+      - ./build/work/stamp/test-deps/elasticsearch
     method: checksum
 
   test-deps:mongodb:
@@ -727,6 +727,7 @@ tasks:
   test-deps:
     cmds:
       - task: test-deps:bundle
+      - task: test-deps:elasticsearch
       - task: test-deps:lua:luacheck
       - task: test-deps:lua:penlight
       - task: test-deps:mailhog
@@ -789,9 +790,9 @@ tasks:
 
   test:
     deps:
-      - test-deps:mongodb
-      - test-deps:elasticsearch
+      - test-deps
     cmds:
+      - task: test-deps
       - unbuffer ./tasks/test/default
 
   install:

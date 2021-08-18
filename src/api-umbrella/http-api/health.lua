@@ -35,10 +35,11 @@ local function status_response(quick)
 
   local httpc = http.new()
   httpc:set_timeout(3000)
+  ngx.log(ngx.ERR, "Before check elasticsearch")
 
   -- Check the health of the ElasticSearch cluster if its configured
   if next(config["elasticsearch"]["hosts"]) ~= nil then
-
+    ngx.log(ngx.ERR, "Check elasticsearch")
     response["details"]["analytics_db"] = "red"
     response["details"]["analytics_db_setup"] = "red"
 
