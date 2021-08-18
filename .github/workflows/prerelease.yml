@@ -41,7 +41,7 @@ jobs:
         with:
           push: false
           tags: |
-            localhost:5000/api-umbrella-base${{ env.IMAGE_TAG }}
+            api-umbrella-base:${{ env.IMAGE_TAG }}
           file: Dockerfile-base
 
       - name: Build test image
@@ -50,7 +50,7 @@ jobs:
         with:
           push: false
           build-args: |
-            BASE_IMAGE=localhost:5000/api-umbrella-base${{ env.IMAGE_TAG }}
+            BASE_IMAGE=lapi-umbrella-base:${{ env.IMAGE_TAG }}
           tags: |
             ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           file: Dockerfile-test

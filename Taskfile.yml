@@ -794,6 +794,12 @@ tasks:
     cmds:
       - unbuffer ./tasks/test/default
 
+  single-test:
+    deps:
+      - test-deps
+    cmds:
+      - unbuffer ./tasks/test/single-test
+
   install:
     cmds:
       - ./tasks/install
