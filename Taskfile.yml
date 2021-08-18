@@ -792,7 +792,6 @@ tasks:
     deps:
       - test-deps
     cmds:
-      - task: test-deps
       - unbuffer ./tasks/test/default
 
   install:
