@@ -1,4 +1,5 @@
-FROM umbrella:base AS build
+ARG BASE_VERSION=latest
+FROM fiware/api-umbrella-base:${BASE_VERSION}  AS build
 
 FROM ubuntu:18.04
 
