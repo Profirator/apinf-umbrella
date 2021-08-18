@@ -12,7 +12,11 @@ jobs:
 
   prerelease:
     runs-on: ubuntu-latest
-
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: actions/checkout@v2
 
@@ -37,7 +41,7 @@ jobs:
         with:
           push: false
           tags: |
-            ${{ env.BASE_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            localhost:5000/api-umbrella-base${{ env.IMAGE_TAG }}
           file: Dockerfile-base
 
       - name: Build test image
@@ -46,7 +50,7 @@ jobs:
         with:
           push: false
           build-args: |
-            BASE_VERSION=${{ env.IMAGE_TAG }}
+            BASE_IMAGE=localhost:5000/api-umbrella-base${{ env.IMAGE_TAG }}
           tags: |
             ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           file: Dockerfile-test

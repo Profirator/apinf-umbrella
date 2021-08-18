@@ -1,5 +1,5 @@
-ARG BASE_VERSION=latest
-FROM fiware/api-umbrella-base:${BASE_VERSION} AS build
+ARG BASE_IMAGE=fiware/api-umbrella-base:latest
+FROM ${BASE_IMAGE} AS build
 
 COPY test /app/test
 
