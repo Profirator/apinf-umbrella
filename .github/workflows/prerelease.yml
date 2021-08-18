@@ -50,7 +50,7 @@ jobs:
         with:
           push: false
           build-args: |
-            BASE_IMAGE=lapi-umbrella-base:${{ env.IMAGE_TAG }}
+            BASE_IMAGE=api-umbrella-base:${{ env.IMAGE_TAG }}
           tags: |
             ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           file: Dockerfile-test
