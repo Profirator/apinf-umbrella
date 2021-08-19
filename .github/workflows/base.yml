@@ -43,5 +43,5 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: ${{ BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }}
+          tags: ${{ env.BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }}
           file: docker/Dockerfile-base
