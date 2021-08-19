@@ -26,7 +26,7 @@ jobs:
 
       - name: Build test image
         run: |
-          docker build -f Dockerfile-test -t ${{ env.TEST_IMAGE_NAME }} --build-arg BASE_IMAGE=${{ BASE_IMAGE }}:${{ steps.extract_branch.outputs.branch }} .
+          docker build -f Dockerfile-test -t ${{ env.TEST_IMAGE_NAME }} --build-arg BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }} .
 
       - name: Setup test env
         run: |
