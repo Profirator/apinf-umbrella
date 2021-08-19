@@ -1,0 +1,42 @@
+name: Run tests
+
+on:
+  push:
+
+
+env:
+  BASE_IMAGE_NAME: fiware/api-umbrella-base
+  TEST_IMAGE_NAME: api-umbrella-test
+
+jobs:
+
+  baserelease:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Wait for base image
+        run: |
+          ./docker/wait-for.sh
+
+      - name: Build test image
+        run: |
+          docker build -f Dockerfile-test -t ${{ env.TEST_IMAGE_NAME }} --build-arg BASE_IMAGE=${{ BASE_IMAGE }}:${{ steps.extract_branch.outputs.branch }} .
+
+      - name: Setup test env
+        run: |
+          docker-compose -f docker/compose/docker-compose.yaml up -d
+
+      - name: Run tests
+        run: |
+          docker run -v ./test:/app/test/reports -e TEST_TO_RUN=test/proxy/dns/test_custom_server.rb --network  test-network  ${{ env.TEST_IMAGE_NAME }} make single-test
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: test-report
+          path: ./test
