@@ -1,6 +1,6 @@
 max_retry=$2
 counter=0
-while ! docker image inspect $1
+while ! docker manifest inspect $1
 do
   [[ counter -eq $max_retry ]] && echo "Failed!" && exit 1		
   ((counter++))
