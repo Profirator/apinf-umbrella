@@ -22,7 +22,7 @@ jobs:
 
       - name: Wait for base image
         run: |
-          ./docker/wait-for.sh
+          ./docker/wait-for.sh ${{ env.BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }} 15
 
       - name: Build test image
         run: |
