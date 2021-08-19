@@ -39,6 +39,10 @@ jobs:
         run: |
           docker run -v /test/reports:/app/test/reports --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
+      - name: Check report
+        run: |
+          ls /test/reports
+
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
