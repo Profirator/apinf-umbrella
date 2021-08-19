@@ -1,7 +1,13 @@
 name: Pre-Release and Test
 
 on:
-  push:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
 
 env:
   BASE_IMAGE_NAME: fiware/api-umbrella-base
@@ -39,10 +45,15 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run -v $(PWD)/test:/app/test/reports -e TEST_TO_RUN=test/proxy/dns/test_custom_server.rb --network  test-network  ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} make single-test
+          docker run -v test:/app/test/reports --network  test-network  ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} make test
 
       - uses: actions/upload-artifact@v2
         if: always()
         with:
           name: test-report
-          path: $(PWD)/test
+          path: test
+
+      - name: Build and push snapshot
+        run: |
+          docker build -f Dockerfile-build-from-base -t ${{ env.IMAGE_NAME }}:latest --build-arg BASE_IMAGE=api-umbrella-base:${{ env.IMAGE_TAG }} .
+          docker push ${{ env.IMAGE_NAME }}:latest
