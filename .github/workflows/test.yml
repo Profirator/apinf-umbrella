@@ -40,10 +40,10 @@ jobs:
           docker run -v /test/reports:/app/test/reports -v /test/images:/app/test/tmp/capybara --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action
         if: always()
         with:
-          files: /test/reports/*.xml
+          files: /test/reports/*
 
       - uses: actions/upload-artifact@v2
         with:
