@@ -34,9 +34,9 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run -v ./test:/app/test/reports -e TEST_TO_RUN=test/proxy/dns/test_custom_server.rb --network  test-network  ${{ env.TEST_IMAGE_NAME }} make single-test
+          docker run -v test:/app/test/reports -e TEST_TO_RUN=test/proxy/dns/test_custom_server.rb --network  test-network  ${{ env.TEST_IMAGE_NAME }} make single-test
 
       - uses: actions/upload-artifact@v2
         with:
           name: test-report
-          path: ./test
+          path: test
