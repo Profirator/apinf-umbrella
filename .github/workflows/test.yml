@@ -39,7 +39,8 @@ jobs:
         run: |
           docker run -v /test/reports:/app/test/reports --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
-      - uses: actions/upload-artifact@v2
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
         with:
-          name: test-report
-          path: /test/reports
+          files: /test/reports/*.xml
