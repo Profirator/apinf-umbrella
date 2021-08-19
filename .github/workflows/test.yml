@@ -35,11 +35,7 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          docker run -v /test/reports:/app/test/reports -e TEST_TO_RUN=test/proxy/dns/test_custom_server.rb --network  test-network  ${{ env.TEST_IMAGE_NAME }} make single-test
-
-      - name: LS
-        run: |
-          ls /test/reports
+          docker run -v /test/reports:/app/test/reports --network  test-network  ${{ env.TEST_IMAGE_NAME }} make test
 
       - uses: actions/upload-artifact@v2
         with:
