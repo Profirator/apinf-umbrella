@@ -45,4 +45,4 @@ jobs:
         with:
           push: true
           tags: ${{ env.BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }}
-          file: docker/Dockerfile-base
+          file: Dockerfile-base
