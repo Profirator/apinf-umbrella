@@ -14,7 +14,3 @@ RUN /app/tasks/install-system-build-dependencies
 RUN make test-deps
 
 COPY config/test.yml config/test.yml
-
-RUN export PATH="$STAGE_EMBEDDED_DIR/bin:$DEFAULT_PATH"
-RUN export BUNDLE_GEMFILE="$SOURCE_DIR/Gemfile"
-RUN export BUNDLE_APP_CONFIG="$WORK_DIR/tasks/test-deps/bundle/_persist/.bundle"

@@ -21,11 +21,11 @@ nginx:
   proxy_send_timeout: 10
 elasticsearch:
   hosts:
-    - "http://elasticsearch:9200"
+    - "http://127.0.0.1:9200"
   api_version: 7
   template_version: 1
 mongodb:
-  url: "mongodb://mongo-db:27017/api_umbrella"
+  url: "mongodb://127.0.0.1:27017/api_umbrella"
   read_preference: primaryPreferred
 trafficserver:
   port: 13009

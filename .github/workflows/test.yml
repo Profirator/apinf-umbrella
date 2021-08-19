@@ -32,10 +32,12 @@ jobs:
         run: |
           docker-compose -f docker/compose/docker-compose.yaml up -d
 
+      # we need to use the host network, since some of the tests change the dns configuration of the container, thus destroy the connection through
+      # the docker network
       - name: Run tests
         continue-on-error: true
         run: |
-          docker run -v /test/reports:/app/test/reports --network  test-network  ${{ env.TEST_IMAGE_NAME }} make test
+          docker run -v /test/reports:/app/test/reports --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
       - uses: actions/upload-artifact@v2
         with:
