@@ -37,14 +37,15 @@ jobs:
       - name: Run tests
         continue-on-error: true
         run: |
-          docker run -v /test/reports:/app/test/reports --network  host  ${{ env.TEST_IMAGE_NAME }} make test
-
-      - name: Check report
-        run: |
-          ls /test/reports
+          docker run -v /test/reports:/app/test/reports -v /test/images:/app/test/tmp/capybara --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: always()
         with:
           files: /test/reports/*.xml
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: selenium-images
+          path: /test/images
