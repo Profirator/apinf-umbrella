@@ -45,13 +45,13 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run -v test:/app/test/reports --network  test-network  ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} make test
+          docker run -v /test/reports:/app/test/reports -v test:/app/test/reports --network  test-network  ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} make test
 
       - uses: actions/upload-artifact@v2
         if: always()
         with:
           name: test-report
-          path: test
+          path: /test/reports
 
       - name: Build and push snapshot
         run: |
