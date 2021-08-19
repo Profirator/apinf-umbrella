@@ -3,6 +3,7 @@ name: Build branch base
 on:
   push:
     paths:
+      - .github/**
       - Dockerfile-base
       - tasks/**
       - src/**
