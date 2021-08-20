@@ -40,7 +40,7 @@ jobs:
           docker run -v /test/reports:/app/test/reports -v /test/images:/app/test/tmp/capybara --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
       - name: Publish Test Report
-          uses: mikepenz/action-junit-report@v2
+        uses: mikepenz/action-junit-report@v2
           if: always() # always run even if the previous step fails
           with:
             report_paths: '**/test/reports/TEST-*.xml'
