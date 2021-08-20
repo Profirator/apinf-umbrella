@@ -43,7 +43,7 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@master
         if: always()
         with:
-          files: /**/test/reports/*.xml
+          files: /github/workspace/test/reports/*.xml
 
       - uses: actions/upload-artifact@v2
         with:
