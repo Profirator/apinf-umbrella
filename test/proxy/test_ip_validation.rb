@@ -1,4 +1,5 @@
 require_relative "../test_helper"
+require 'json'
 
 class Test::Proxy::TestIpValidation < Minitest::Test
   include ApiUmbrellaTestHelpers::Setup
@@ -174,7 +175,8 @@ class Test::Proxy::TestIpValidation < Minitest::Test
       :headers => headers,
     }))
     assert_response_code(403, response)
-    assert_match("API_KEY_UNAUTHORIZED", response.body)
+    data = JSON.parse(response.body)
+    assert_match("API_KEY_OR_TOKEN_UNAUTHORIZED", data['error']['code'])
   end
 
   def assert_authorized_ip(path, headers = {})
