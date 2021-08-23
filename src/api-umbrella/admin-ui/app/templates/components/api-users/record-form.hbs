@@ -24,7 +24,7 @@
         {{f.static-field "id" label="User ID"}}
         {{f.static-field "registrationSource" label="Registration Source"}}
       {{else}}
-        {{f.checkbox-field "termsAndConditions" label=(html-safe "User agrees to the <a href=\"/account/terms\" onclick=\"window.open(this.href, 'api_download_popup', 'height=500,width=790,menubar=no,toolbar=no,location=no,personalbar=no,status=no,resizable=yes,scrollbars=yes'); return false;\" title=\"Opens new window to terms and conditions\">terms and conditions</a>")}}
+        {{f.checkbox-field "termsAndConditions" id="termsAndConditions" label=(html-safe "User agrees to the <a href=\"/account/terms\" onclick=\"window.open(this.href, 'api_download_popup', 'height=500,width=790,menubar=no,toolbar=no,location=no,personalbar=no,status=no,resizable=yes,scrollbars=yes'); return false;\" title=\"Opens new window to terms and conditions\">terms and conditions</a>")}}
         {{f.checkbox-field "sendWelcomeEmail" label="Send user welcome e-mail with API key information"}}
       {{/if}}
     </fieldset>

@@ -1,9 +1,6 @@
 ARG BASE_IMAGE=fiware/api-umbrella-base:latest
 FROM ${BASE_IMAGE} AS build
 
-COPY test /app/test
-COPY Gemfile /app/Gemfile
-COPY Gemfile.lock /app/Gemfile.lock
 
 WORKDIR /app
 
@@ -39,4 +36,7 @@ RUN groupadd -r api-umbrella && \
 RUN /app/tasks/install-system-build-dependencies
 RUN make test-deps
 
+COPY test /app/test
+COPY Gemfile /app/Gemfile
+COPY Gemfile.lock /app/Gemfile.lock
 COPY config/test.yml config/test.yml
