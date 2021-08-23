@@ -19,6 +19,7 @@ class Test::AdminUi::TestApiUsers < Minitest::Capybara::Test
     fill_in "First Name", :with => "John"
     fill_in "Last Name", :with => "Doe"
     checkbox = find(:checkbox, 'termsAndConditions-termsAndConditions', :visible => false)
+    checkbox.click(offset = {x: 0, y: 0})
 
     # Rate Limiting
     select "Custom rate limits", :from => "Rate Limit"

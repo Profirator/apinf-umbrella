@@ -18,6 +18,7 @@ class Test::AdminUi::TestApiUsersAllowedReferers < Minitest::Capybara::Test
     fill_in "First Name", :with => "John"
     fill_in "Last Name", :with => "Doe"
     checkbox = find(:checkbox, 'termsAndConditions-termsAndConditions', :visible => false)
+    checkbox.click(offset = {x: 0, y: 0})
     click_button("Save")
 
     assert_text("Successfully saved the user")
@@ -33,6 +34,7 @@ class Test::AdminUi::TestApiUsersAllowedReferers < Minitest::Capybara::Test
     fill_in "First Name", :with => "John"
     fill_in "Last Name", :with => "Doe"
     checkbox = find(:checkbox, 'termsAndConditions-termsAndConditions', :visible => false)
+    checkbox.click(offset = {x: 0, y: 0})
     fill_in "Restrict Access to HTTP Referers", :with => "*.example.com/*\n\n\n\nhttp://google.com/*"
     click_button("Save")
 
