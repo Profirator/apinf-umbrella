@@ -72,7 +72,7 @@ class Test::Proxy::ApiKeyValidation::TestOptionalKeys < Minitest::Test
       },
     }))
     assert_response_code(403, response)
-    assert_match("API_KEY_INVALID", response.body)
+    assert_match("API_KEY_OR_TOKEN_INVALID", response.body)
 
     response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/no-keys/hello", http_options.deep_merge({
       :headers => {

@@ -253,7 +253,7 @@ class Test::Proxy::ApiKeyValidation::TestRoleRequirements < Minitest::Test
   def test_api_requiring_roles_not_key_given_no_key
     response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/no-key/", keyless_http_options)
     assert_response_code(403, response)
-    assert_match("API_KEY_UNAUTHORIZED", response.body)
+    assert_match("API_KEY_OR_TOKEN_UNAUTHORIZED", response.body)
   end
 
   def test_api_requiring_roles_not_key_given_key_without_roles
@@ -268,7 +268,7 @@ class Test::Proxy::ApiKeyValidation::TestRoleRequirements < Minitest::Test
   def test_api_requiring_roles_sub_settings_disables_key_given_no_key
     response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/required-roles/hello/sub-no-key-required/", keyless_http_options)
     assert_response_code(403, response)
-    assert_match("API_KEY_UNAUTHORIZED", response.body)
+    assert_match("API_KEY_OR_TOKEN_UNAUTHORIZED", response.body)
   end
 
   def test_api_requiring_roles_sub_settings_disables_key_given_key_without_roles
@@ -289,7 +289,7 @@ class Test::Proxy::ApiKeyValidation::TestRoleRequirements < Minitest::Test
       },
     }))
     assert_response_code(403, response)
-    assert_match("API_KEY_UNAUTHORIZED", response.body)
+    assert_match("API_KEY_OR_TOKEN_UNAUTHORIZED", response.body)
   end
 
   def assert_authorized(path, key)
