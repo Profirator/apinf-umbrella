@@ -76,7 +76,8 @@ class Test::Proxy::Logging::TestHostRealip < Minitest::Test
 
     record = wait_for_log(response)[:hit_source]
     assert_equal("52.52.118.192", record.fetch("request_ip"))
-    assert_equal("San Jose", record.fetch("request_ip_city"))
+#  only testable with geoIp activated
+#     assert_equal("San Jose", record.fetch("request_ip_city"))
   end
 
   def test_rate_limit_uses_realip
