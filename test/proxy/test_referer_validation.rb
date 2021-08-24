@@ -181,7 +181,7 @@ class Test::Proxy::TestRefererValidation < Minitest::Test
       :headers => headers,
     }))
     assert_response_code(403, response)
-    assert_match("API_KEY_UNAUTHORIZED", response.body)
+    assert_match("API_KEY_OR_TOKEN_UNAUTHORIZED", response.body)
   end
 
   def assert_authorized_referer(path, headers = {})
