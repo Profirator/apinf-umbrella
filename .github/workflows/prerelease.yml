@@ -35,26 +35,6 @@ jobs:
         run: |
           docker build -f Dockerfile-base -t api-umbrella-base:${{ env.IMAGE_TAG }} .
 
-      - name: Build test image
-        run: |
-          docker build -f Dockerfile-test -t ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} --build-arg BASE_IMAGE=api-umbrella-base:${{ env.IMAGE_TAG }} .
-
-      - name: Setup test env
-        run: |
-          docker-compose -f docker/compose/docker-compose.yaml up -d
-
-      # we need to use the host network, since some of the tests change the dns configuration of the container, thus destroy the connection through
-      # the docker network
-      - name: Run tests
-        run: |
-          docker run -v /test/reports:/app/test/reports --network  host ${{ env.TEST_IMAGE_NAME }}:${{ env.IMAGE_TAG }} make test
-
-      - uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: test-report
-          path: /test/reports
-
       - name: Build and push snapshot
         run: |
           docker build -f Dockerfile-build-from-base -t ${{ env.IMAGE_NAME }}:latest --build-arg BASE_IMAGE=api-umbrella-base:${{ env.IMAGE_TAG }} .
