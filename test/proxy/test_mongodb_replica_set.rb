@@ -4,94 +4,96 @@ class Test::Proxy::TestMongodbReplicaSet < Minitest::Test
   include ApiUmbrellaTestHelpers::Setup
   include Minitest::Hooks
 
-# Replicaset configuration depends on external components. Will not be tested in here.
-# Code will be kept for lookup reasons for now.
+  def setup
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
 
-#   def setup
-#     super
-#     setup_server
-#     once_per_class_setup do
-#       # Setup the replica set in mongo-orchestration.
-#       setup_mongo_orchestration
-#
-#       # Re-configure API Umbrella to use the replica set server configuration.
-#       mongodb_url = "mongodb://127.0.0.1:13090,127.0.0.1:13091/api_umbrella_test"
-#       override_config_set({
-#         :gatekeeper => {
-#           # Disable API key caching to ensure things work across replica set
-#           # elections without any caching.
-#           :api_key_cache => false,
-#         },
-#         :mongodb => {
-#           :url => mongodb_url,
-#         },
-#       }, "--router")
-#
-#       # Reloading API Umbrella doesn't normally restart the mora process. But
-#       # since we've changed the MongoDB configuration, we need to force a
-#       # restart of the mora process too.
-#       api_umbrella_process.perp_restart("mora")
-#
-#       # Re-establish the mongodb connections used in the tests to point to the
-#       # replica set.
-#       refute_match(":13001", mongodb_url)
-#       Mongoid::Clients.disconnect
-#       Mongoid::Clients.clear
-#       Mongoid.load_configuration({
-#         :clients => {
-#           :default => {
-#             :uri => mongodb_url,
-#           },
-#         },
-#       })
-#
-#       # Add a backend to the database. This helps verify API Umbrella is
-#       # pointing to the replica set, and also ensure that there are no
-#       # interruptions in the database-based backend configuration during tests.
-#       prepend_api_backends([
-#         {
-#           :frontend_host => "127.0.0.1",
-#           :backend_host => "127.0.0.1",
-#           :servers => [{ :host => "127.0.0.1", :port => 9444 }],
-#           :url_matches => [{ :frontend_prefix => "/#{unique_test_class_id}/", :backend_prefix => "/" }],
-#         },
-#       ])
-#     end
-#   end
-#
-#   def teardown
-#     super
-#     Mongoid::Clients.disconnect
-#   end
-#
-#   def after_all
-#     super
-#     override_config_reset("--router")
-#
-#     # After reloading API Umbrella to reset it back to it's normal state, also
-#     # force restart Mora.
-#     api_umbrella_process.perp_restart("mora")
-#
-#     # Re-establish the mongodb connections used in the tests to point to the
-#     # default standalone database
-#     assert_match(":13001", $config["mongodb"]["url"])
-#     Mongoid::Clients.disconnect
-#     Mongoid::Clients.clear
-#     Mongoid.load_configuration({
-#       :clients => {
-#         :default => {
-#           :uri => $config["mongodb"]["url"],
-#         },
-#       },
-#     })
-#
-#     # Trigger a new database configuration against the original standalone
-#     # database to ensure that we wait until it's fully active.
-#     prepend_api_backends([])
-#   end
-#
-#   def test_no_dropped_connections_during_replica_set_elections
-#
+    super
+    setup_server
+    once_per_class_setup do
+      # Setup the replica set in mongo-orchestration.
+      setup_mongo_orchestration
+
+      # Re-configure API Umbrella to use the replica set server configuration.
+      mongodb_url = "mongodb://127.0.0.1:13090,127.0.0.1:13091/api_umbrella_test"
+      override_config_set({
+        :gatekeeper => {
+          # Disable API key caching to ensure things work across replica set
+          # elections without any caching.
+          :api_key_cache => false,
+        },
+        :mongodb => {
+          :url => mongodb_url,
+        },
+      }, "--router")
+
+      # Reloading API Umbrella doesn't normally restart the mora process. But
+      # since we've changed the MongoDB configuration, we need to force a
+      # restart of the mora process too.
+      api_umbrella_process.perp_restart("mora")
+
+      # Re-establish the mongodb connections used in the tests to point to the
+      # replica set.
+      refute_match(":13001", mongodb_url)
+      Mongoid::Clients.disconnect
+      Mongoid::Clients.clear
+      Mongoid.load_configuration({
+        :clients => {
+          :default => {
+            :uri => mongodb_url,
+          },
+        },
+      })
+
+      # Add a backend to the database. This helps verify API Umbrella is
+      # pointing to the replica set, and also ensure that there are no
+      # interruptions in the database-based backend configuration during tests.
+      prepend_api_backends([
+        {
+          :frontend_host => "127.0.0.1",
+          :backend_host => "127.0.0.1",
+          :servers => [{ :host => "127.0.0.1", :port => 9444 }],
+          :url_matches => [{ :frontend_prefix => "/#{unique_test_class_id}/", :backend_prefix => "/" }],
+        },
+      ])
+    end
+  end
+
+  def teardown
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
+    super
+    Mongoid::Clients.disconnect
+  end
+
+  def after_all
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
+    super
+    override_config_reset("--router")
+
+    # After reloading API Umbrella to reset it back to it's normal state, also
+    # force restart Mora.
+    api_umbrella_process.perp_restart("mora")
+
+    # Re-establish the mongodb connections used in the tests to point to the
+    # default standalone database
+    assert_match(":13001", $config["mongodb"]["url"])
+    Mongoid::Clients.disconnect
+    Mongoid::Clients.clear
+    Mongoid.load_configuration({
+      :clients => {
+        :default => {
+          :uri => $config["mongodb"]["url"],
+        },
+      },
+    })
+
+    # Trigger a new database configuration against the original standalone
+    # database to ensure that we wait until it's fully active.
+    prepend_api_backends([])
+  end
+
+  def test_no_dropped_connections_during_replica_set_elections
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
+
 #     # First perform a sanity check to ensure that API key caching is disabled.
 #     # We test this by disabling an API key and immediately expecting it to
 #     # return forbidden (rather than being cached and valid for a couple sends).
@@ -190,7 +192,7 @@ class Test::Proxy::TestMongodbReplicaSet < Minitest::Test
 #     wait_for_num_tests(100)
 #
 #     request_thread.exit
-#   end
+  end
 
   private
 
