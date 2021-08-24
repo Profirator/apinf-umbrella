@@ -28,7 +28,7 @@ class Test::Proxy::ApiKeyValidation::TestDeny < Minitest::Test
       },
     }))
     assert_response_code(403, response)
-    assert_match("API_KEY_INVALID", response.body)
+    assert_match("API_KEY_OR_TOKEN_INVALID", response.body)
   end
 
   def test_disabled_api_key
