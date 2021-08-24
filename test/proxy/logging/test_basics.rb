@@ -525,8 +525,10 @@ class Test::Proxy::Logging::TestBasics < Minitest::Test
 
       # Explicitly uppercased fields.
       assert_equal("GET", record["request_method"])
-      assert_equal("US", record["request_ip_country"])
-      assert_equal("CA", record["request_ip_region"])
+#       geoip features
+#       assert_equal("US", record["request_ip_country"])
+#       assert_equal("CA", record["request_ip_region"])
+#       assert_equal("San Jose", record["request_ip_city"])
 
       # Everything else should retain original case.
       assert_equal(self.api_key, record["api_key"])
@@ -542,7 +544,6 @@ class Test::Proxy::Logging::TestBasics < Minitest::Test
         "3/foobar.example/#{unique_test_id}/logging-example/FOO/",
         "4/foobar.example/#{unique_test_id}/logging-example/FOO/BAR",
       ], record["request_hierarchy"])
-      assert_equal("San Jose", record["request_ip_city"])
       assert_equal("HTTP://FOO.EXAMPLE", record["request_origin"])
       assert_equal("/#{unique_test_id}/logging-example/FOO/BAR/", record["request_path"])
       assert_equal("URL1=FOO", record["request_url_query"])
