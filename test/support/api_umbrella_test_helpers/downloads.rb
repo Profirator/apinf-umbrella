@@ -33,7 +33,7 @@ module ApiUmbrellaTestHelpers
     end
 
     def wait_for_download
-      Timeout.timeout(10) do
+      Timeout.timeout(60) do
         sleep 0.1 until downloaded?
       end
     end
