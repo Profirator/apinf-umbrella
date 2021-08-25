@@ -35,7 +35,6 @@ jobs:
       # we need to use the host network, since some of the tests change the dns configuration of the container, thus destroy the connection through
       # the docker network
       - name: Run tests
-        continue-on-error: true
         run: |
           docker run -v /test/reports:/app/test/reports -v /test/images:/app/test/tmp/capybara --network  host  ${{ env.TEST_IMAGE_NAME }} make test
 
@@ -46,6 +45,7 @@ jobs:
           report_paths: '/test/reports/*.xml'
 
       - uses: actions/upload-artifact@v2
+        if: always() # always run even if the previous step fails
         with:
           name: selenium-images
           path: /test/images
