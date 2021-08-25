@@ -185,11 +185,12 @@ local function get_policy_parameters(method)
 
       return entity_type, entities, attrs, nil
    elseif method == "POST" then
-      -- POST request for creating entities or subscriptions
+      -- POST request for creating entities or subscriptions, or sending notifications
       -- Check NGSI-LD compliance of URI
       local check_ent = string.match(in_uri, ".*/entities/*.*")
       local check_sub = string.match(in_uri, ".*/subscriptions/*")
-      if not check_ent and not check_sub then
+      local check_not = true -- Notifications cannot be identified by URI
+      if not check_ent and not check_sub and not check_not then
 	 return nil, nil, nil, "No NGSI-LD compliant POST request"
       end
       -- TODO: Implement batch create via ngsi-ld/v1/entityOperations/upsert and ngsi-ld/v1/entityOperations/create
@@ -200,6 +201,9 @@ local function get_policy_parameters(method)
       if check_sub then
 	 -- POST subscription has no ID
 	 entity_id = "*"
+      elseif body_json["subscriptionId"] then
+	 -- POST subscription: policy identifier should restrict by subscription ID
+	 entity_id = body_json["subscriptionId"]
       elseif not entity_id or not (string.len(entity_id) > 0) then
 	 -- POST entity: No entity ID specified in URI, obtaining from payload
 	 if not body_json["id"] then
@@ -211,6 +215,7 @@ local function get_policy_parameters(method)
 
       -- Get entity type from payload or entity ID
       if body_json and body_json["type"] then
+	 -- Will also apply for Notification
 	 entity_type = body_json["type"]
       elseif check_sub then
 	 -- POST subscription has fixed type
@@ -229,7 +234,7 @@ local function get_policy_parameters(method)
 	 table.insert(attrs, attr)
       else
 	 -- Whole entity to be created, wildcard for attributes
-	 -- Also for POST subscription
+	 -- Also for POST subscription and notification
 	 table.insert(attrs, "*")
       end
 

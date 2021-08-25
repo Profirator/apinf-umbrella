@@ -81,6 +81,8 @@ trafficserver:
     size: 256M
   embedded_server_config:
     records: []
+  # currently only extended_custom supported, leave empty to disable request logging
+  log_format: extended_custom
 api_server:
   host: 127.0.0.1
   port: 14010
@@ -171,6 +173,7 @@ auto_ssl:
   hook_server:
     port: 14007
 rsyslog:
+  disable_request_logging: false
   host: 127.0.0.1
   port: 14014
 log:

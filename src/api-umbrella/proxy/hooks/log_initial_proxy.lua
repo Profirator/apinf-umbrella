@@ -1,6 +1,7 @@
 local flatten_headers = require "api-umbrella.utils.flatten_headers"
 local log_utils = require "api-umbrella.proxy.log_utils"
 local xpcall_error_handler = require "api-umbrella.utils.xpcall_error_handler"
+local config = require "api-umbrella.proxy.models.file_config"
 
 local ngx_ctx = ngx.ctx
 local ngx_var = ngx.var
@@ -71,6 +72,9 @@ local function build_log_data()
 end
 
 local function log_request()
+  if config["rsyslog"]["disable_request_logging"] == true then
+    return
+  end
   -- Build the log message and send to rsyslog for processing.
   local data = build_log_data()
   local syslog_message = log_utils.build_syslog_message(data)
