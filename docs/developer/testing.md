@@ -18,16 +18,42 @@ API Umbrella's test suite uses Ruby's [minitest](https://github.com/seattlerb/mi
 
 ## Running Tests
 
-Assuming you have a [Docker development environment](dev-setup.html), you can run all the tests with:
+For running the tests, the ```Dockerfile-test``` can be used. After building the base-image, the test image can be build:
 
-```bash
-docker-compose run --rm app make test
 ```
+    docker build -f Dockerfile-test --build-arg BASE_IMAGE=<IMAGE_TO_TEST> -t umbrella-test . 
+```
+
+Before executing the actual tests, the environment([MongoDB](https://www.mongodb.com/) and [Elasticsearch](https://www.elastic.co/)) needs to be 
+provided. 
+
+```
+    docker-compose -f docker/compose/docker-compose.yaml up
+```
+
+Test can then be executed via:
+
+```
+    docker run --network host  -v $(pwd)/pics:/app/test/tmp/capybara umbrella-test make test
+```
+
+All screenshots taken by selenium/capybara can be found at $(pwd)/pics after that. To access logfiles of all umbrella components, the tests should
+be executed as following:
+
+```
+    docker run --network host  -v $(pwd)/pics:/app/test/tmp/capybara --entrypoint bash -it umbrella-test
+    make test
+``` 
+
+Logs can be found at `/app/test/tmp/run/api-umbrella-root/var/log`
 
 ### Running Individual Tests
 
-If you'd like to run individual tests, rather than all the tests, there are a few different ways to do that:
+Individual tests can be run in a similar way. Precondition is a running enviornment, as described in the previous paragraph.
+The test to run can be provided via the environment variable `TEST_TO_RUN` and can either be a single test file(f.e. `test/apis/admin/stats/test_logs.rb`) 
+or a folder to run all test below that(f.e. `test/apis/admin/stats`).
 
-```bash
-docker-compose run --rm app bundle exec minitest test/apis/v1/admins/test_create.rb
 ```
+    docker run -e TEST_TO_RUN=<MY_TEST> --network host  -v $(pwd)/pics:/app/test/tmp/capybara --entrypoint bash -it umbrella-test
+    make single-test
+``` 
