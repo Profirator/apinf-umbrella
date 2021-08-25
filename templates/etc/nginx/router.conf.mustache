@@ -39,8 +39,12 @@ http {
     'rl=$request_length rt=$request_time uct=$upstream_connect_time '
     'uht=$upstream_header_time urt=$upstream_response_time '
     'ua="$upstream_addr" us="$upstream_status"';
+  {{#nginx.access_log_filename}}
   access_log {{log_dir}}/nginx/{{nginx.access_log_filename}} combined_extended {{nginx.access_log_options}};
-
+  {{/nginx.access_log_filename}}
+  {{^nginx.access_log_filename}}
+  access_log off;
+  {{/nginx.access_log_filename}}
   client_body_temp_path {{tmp_dir}}/nginx-client_body_temp;
   proxy_temp_path {{tmp_dir}}/nginx-proxy_temp;
   fastcgi_temp_path {{tmp_dir}}/nginx-fastcgi_temp;
