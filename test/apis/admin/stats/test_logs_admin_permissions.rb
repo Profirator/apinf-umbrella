@@ -23,7 +23,7 @@ class Test::Apis::Admin::Stats::TestLogsAdminPermissions < Minitest::Test
     FactoryBot.create(factory, :request_at => Time.parse("2015-01-15T00:00:00Z").utc)
     LogItem.refresh_indices!
 
-    Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session(admin)).deep_merge({
+    Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session(admin)).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",

@@ -14,7 +14,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :request_url => "http://127.0.0.1/with_api_key/?foo=bar&api_key=my_secret_key", :request_path => "/with_api_key/", :request_url_query => "foo=bar&api_key=my_secret_key", :request_query => { "foo" => "bar", "api_key" => "my_secret_key" }, :request_user_agent => unique_test_id)
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
@@ -40,7 +40,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :request_url => "http://127.0.0.1/with_api_key/?api_key=my_secret_key&foo=bar", :request_path => "/with_api_key/", :request_url_query => "api_key=my_secret_key&foo=bar", :request_query => { "foo" => "bar", "api_key" => "my_secret_key" }, :request_user_agent => unique_test_id)
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.csv", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.csv", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
@@ -60,7 +60,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create_list(:log_item, 1505, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :request_user_agent => unique_test_id)
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.csv", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.csv", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "search" => "",
         "start_at" => "2015-01-13",
@@ -102,7 +102,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :request_user_agent => "MOZILLAAA-#{unique_test_id}")
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
@@ -123,7 +123,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :api_key => "AbCDeF", :request_user_agent => unique_test_id)
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
@@ -145,7 +145,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :gatekeeper_denied_code => "api_key_missing", :request_user_agent => "#{unique_test_id}-not-null")
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
@@ -166,7 +166,7 @@ class Test::Apis::Admin::Stats::TestLogs < Minitest::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :request_method => "POST", :request_user_agent => unique_test_id)
     LogItem.refresh_indices!
 
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",

@@ -30,7 +30,7 @@ class Test::Proxy::Routing::TestHttpsConfig < Minitest::Test
 
     # Check some of the APIs that have custom settings outside the normal v1
     # URL path.
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
@@ -41,7 +41,7 @@ class Test::Proxy::Routing::TestHttpsConfig < Minitest::Test
     }))
     assert_response_code(200, response)
 
-    response = Typhoeus.get("http://127.0.0.1:9080/admin/stats/logs.json", http_options.deep_merge(admin_session).deep_merge({
+    response = Typhoeus.get("http://127.0.0.1:9080/api-umbrella/v1/analytics/logs.json", http_options.deep_merge(admin_session).deep_merge({
       :params => {
         "start_at" => "2015-01-13",
         "end_at" => "2015-01-18",
