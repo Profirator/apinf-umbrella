@@ -29,7 +29,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     log = FactoryBot.create(:xss_log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc, :request_method => "OPTIONS")
     LogItem.refresh_indices!
 
-    api-umbrella/_login
+    admin_login
     visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
     refute_selector(".busy-blocker")
 
@@ -48,13 +48,13 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     FactoryBot.create(:log_item, :request_at => Time.parse("2015-01-16T06:06:28.816Z").utc)
     LogItem.refresh_indices!
 
-    api-umbrella/_login
-    visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
+    admin_login
+    visit "/admin/#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
     refute_selector(".busy-blocker")
     assert_link("Download CSV", :href => /start_at=2015-01-12/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/api-umbrella//stats/logs.csv", uri.path)
+    assert_equal("/admin/stats/logs.csv", uri.path)
     assert_equal({
       "search" => "",
       "start_at" => "2015-01-12",
@@ -63,12 +63,12 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
       "query" => DEFAULT_QUERY,
     }, uri.query_values)
 
-    visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-13&end_at=2015-01-18&interval=day"
+    visit "/admin/#/stats/logs?search=&start_at=2015-01-13&end_at=2015-01-18&interval=day"
     refute_selector(".busy-blocker")
     assert_link("Download CSV", :href => /start_at=2015-01-13/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/api-umbrella//stats/logs.csv", uri.path)
+    assert_equal("/admin/stats/logs.csv", uri.path)
     assert_equal({
       "search" => "",
       "start_at" => "2015-01-13",
@@ -77,7 +77,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
       "query" => DEFAULT_QUERY,
     }, uri.query_values)
 
-    visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
+    visit "/admin/#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
     refute_selector(".busy-blocker")
     assert_link("Download CSV", :href => /start_at=2015-01-12/)
     assert_link("Download CSV", :href => /#{Regexp.escape(CGI.escape('"rules":[{'))}/)
@@ -96,7 +96,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
       "search" => "",
     }, uri.query_values)
 
-    visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-13&end_at=2015-01-18&interval=day"
+    visit "/admin/#/stats/logs?search=&start_at=2015-01-13&end_at=2015-01-18&interval=day"
     refute_selector(".busy-blocker")
     assert_link("Download CSV", :href => /start_at=2015-01-13/)
     find("a", :text => /Switch to advanced filters/).click
@@ -106,7 +106,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     assert_link("Download CSV", :href => /response_status%3A200/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/api-umbrella//stats/logs.csv", uri.path)
+    assert_equal("/admin/stats/logs.csv", uri.path)
     assert_equal({
       "search" => "response_status:200",
       "start_at" => "2015-01-13",
@@ -121,8 +121,8 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     FactoryBot.create_list(:log_item, 5, :request_at => 1421413588000, :request_method => "OPTIONS")
     LogItem.refresh_indices!
 
-    api-umbrella/_login
-    visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
+    admin_login
+    visit "/admin/#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-18&interval=day"
     refute_selector(".busy-blocker")
 
     assert_link("Download CSV", :href => /start_at=2015-01-12/)
@@ -171,8 +171,8 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
   end
 
   def test_changing_intervals
-    api-umbrella/_login
-    visit "/api-umbrella//#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-13&interval=week"
+    admin_login
+    visit "/admin/#/stats/logs?search=&start_at=2015-01-12&end_at=2015-01-13&interval=week"
     refute_selector(".busy-blocker")
     assert_selector("button.active", :text => "Week")
     assert_link("Download CSV", :href => /interval=week/)
