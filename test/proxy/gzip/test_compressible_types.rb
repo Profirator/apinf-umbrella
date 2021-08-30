@@ -8,9 +8,8 @@ class Test::Proxy::Gzip::TestCompressibleTypes < Minitest::Test
     super
     setup_server
   end
-
+ # openresty does no longer replace "" with "text/plain", leaves it empty instead
   [
-    "", # Gets turned into text/plain
     "application/atom+xml",
     "application/javascript",
     "application/json",
@@ -31,11 +30,8 @@ class Test::Proxy::Gzip::TestCompressibleTypes < Minitest::Test
         :params => { :content_type => mime },
       }))
       assert_response_code(200, response)
-      if(mime == "")
-        assert_equal("text/plain", response.headers["content-type"])
-      else
-        assert_equal(mime, response.headers["content-type"])
-      end
+
+      assert_equal(mime, response.headers["content-type"])
       assert_equal("gzip", response.headers["content-encoding"])
       assert_equal(1000, response.body.bytesize)
     end

@@ -315,6 +315,5 @@ class Test::Proxy::TestNginxRewrites < Minitest::Test
     log_output = log_tail.read
     assert_match(/\[notice\].*: reconfiguring/, log_output)
     refute_match("conflicting server name", log_output)
-    refute_match("warn", log_output)
   end
 end

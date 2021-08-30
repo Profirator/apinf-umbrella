@@ -180,6 +180,6 @@ export default Component.extend({
   }),
 
   downloadUrl: computed('backendQueryParamValues', function() {
-    return '/admin/stats/logs.csv?' + $.param(this.backendQueryParamValues);
+    return '/api-umbrella/v1/analytics/logs.csv?' + $.param(this.backendQueryParamValues);
   }),
 });

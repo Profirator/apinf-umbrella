@@ -243,4 +243,19 @@ class Admin::StatsController < Admin::BaseController
       end
     end
   end
+
+    def sanitized_full_url(record)
+      url = "#{record["request_scheme"]}://#{record["request_host"]}#{record["request_path"]}"
+      url += "?#{strip_api_key_from_query(record["request_url_query"])}" if(record["request_url_query"])
+      url
+    end
+
+    def strip_api_key_from_query(query)
+        stripped = query
+        if(query)
+          stripped = query.gsub(/\bapi_key=?[^&]*(&|$)/i, "")
+          stripped.gsub!(/&$/, "")
+        end
+        stripped
+    end
 end

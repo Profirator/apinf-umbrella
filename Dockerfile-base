@@ -1,0 +1,33 @@
+FROM ubuntu:18.04 AS build
+
+ARG MAXMIND_LICENSE_KEY_ARG
+ARG MAXMIND_EDITION_ID_ARG=GeoLite2-City
+ARG MAXMIND_DOWNLOAD_URL_ARG=https://download.maxmind.com/app/geoip_download
+
+ENV MAXMIND_LICENSE_KEY=$MAXMIND_LICENSE_KEY_ARG
+ENV MAXMIND_EDITION_ID=$MAXMIND_EDITION_ID_ARG
+ENV MAXMIND_DOWNLOAD_URL=$MAXMIND_DOWNLOAD_URL_ARG
+
+ENV NOKOGIRI_USE_SYSTEM_LIBRARIES 1
+
+COPY . /app
+
+WORKDIR /app
+
+RUN ./configure
+
+RUN /app/tasks/install-system-build-dependencies
+
+RUN if [[ -n "$MAXMIND_LICENSE_KEY_ARG" ]] ; then make deps:geolitecity ; else echo "If you want to use the geoIp-feature, please provide a valid license key." ; fi
+
+RUN echo "Install dependencies"
+RUN make deps && make clean:dev
+
+RUN echo "Install build dependencies"
+RUN make build-deps && make clean:dev
+
+RUN echo "Install app dependencies"
+RUN make app-deps && make clean:dev
+
+RUN echo "Make all"
+RUN make && make clean:dev

@@ -15,18 +15,19 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     ApiScope.delete_all
   end
 
+  # plain key without a user is not supported for that api anymore
   def test_no_admin_and_api_key_with_key_creator_role
     api_key = FactoryBot.create(:api_user, {
       :roles => ["api-umbrella-key-creator"],
     }).api_key
     admin = nil
-    assert_admin_permitted_create_only(api_key, admin)
+    assert_unauthorized(api_key, admin)
   end
 
   def test_no_admin_and_api_key_without_key_creator_role
     api_key = FactoryBot.create(:api_user).api_key
     admin = nil
-    assert_admin_forbidden(api_key, admin)
+    assert_unauthorized(api_key, admin)
   end
 
   def test_no_admin_and_no_api_key
@@ -114,7 +115,7 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     admin = FactoryBot.create(:limited_admin, :groups => [
       FactoryBot.create(:google_admin_group, :user_manage_permission),
     ])
-    assert_admin_permitted_manage_only(api_key, admin)
+    assert_admin_manage_and_delete_only(api_key, admin)
   end
 
   def test_manage_admin_and_api_key_without_key_creator_role
@@ -122,7 +123,7 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     admin = FactoryBot.create(:limited_admin, :groups => [
       FactoryBot.create(:google_admin_group, :user_manage_permission),
     ])
-    assert_admin_permitted_manage_only(api_key, admin)
+    assert_admin_manage_and_delete_only(api_key, admin)
   end
 
   def test_manage_admin_and_no_api_key
@@ -133,12 +134,13 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     assert_admin_forbidden(api_key, admin)
   end
 
+  # plain key without a user is not supported for that api anymore
   def test_non_admin_exact_role_needed
     api_key = FactoryBot.create(:api_user, {
       :roles => ["api-umbrella-key-creator-bogus", "bogus-api-umbrella-key-creator"],
     }).api_key
     admin = nil
-    assert_admin_forbidden(api_key, admin)
+    assert_unauthorized(api_key, admin)
   end
 
   def test_non_admin_ignores_private_fields
@@ -203,7 +205,7 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     assert_admin_permitted_show(api_key, admin)
     assert_admin_permitted_create(api_key, admin)
     assert_admin_permitted_update(api_key, admin)
-    assert_no_destroy(api_key, admin)
+    assert_admin_permitted_destroy(api_key, admin)
   end
 
   def assert_admin_permitted_create_only(api_key, admin)
@@ -230,6 +232,14 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     assert_no_destroy(api_key, admin)
   end
 
+  def assert_admin_manage_and_delete_only(api_key, admin)
+    assert_admin_forbidden_index(api_key, admin, true)
+    assert_admin_forbidden_show(api_key, admin, true)
+    assert_admin_permitted_create(api_key, admin)
+    assert_admin_permitted_update(api_key, admin)
+    assert_admin_permitted_destroy(api_key, admin)
+  end
+
   def assert_admin_forbidden(api_key, admin)
     assert_admin_forbidden_index(api_key, admin)
     assert_admin_forbidden_show(api_key, admin)
@@ -246,6 +256,12 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     data = MultiJson.load(response.body)
     record_ids = data["data"].map { |r| r["id"] }
     assert_includes(record_ids, record.id)
+  end
+
+  def assert_unauthorized(api_key, admin)
+     FactoryBot.create(:api_user)
+     response = Typhoeus.get("https://127.0.0.1:9081/api-umbrella/v1/users.json", http_options(api_key, admin))
+     assert_response_code(401, response)
   end
 
   def assert_admin_forbidden_index(api_key, admin, role_based_error = false)
@@ -384,7 +400,7 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     initial_count = active_count
     response = Typhoeus.delete("https://127.0.0.1:9081/api-umbrella/v1/users/#{record.id}.json", http_options(api_key, admin))
     assert_response_code(204, response)
-    assert_equal(-1, active_count - initial_count)
+    assert_equal(1, initial_count - active_count)
   end
 
   def assert_no_destroy(api_key, admin)
@@ -392,11 +408,8 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
     initial_count = active_count
     response = Typhoeus.delete("https://127.0.0.1:9081/api-umbrella/v1/users/#{record.id}.json", http_options(api_key, admin))
 
-    if(!api_key)
-      assert_response_code(403, response)
-    else
-      assert_response_code(404, response)
-    end
+    assert_response_code(403, response)
+
     assert_equal(0, active_count - initial_count)
   end
 
@@ -425,6 +438,6 @@ class Test::Apis::V1::Users::TestPermissions < Minitest::Test
   end
 
   def active_count
-    ApiUser.where(:deleted_at => nil).count
+    ApiUser.where(:disabled_at => nil).count
   end
 end

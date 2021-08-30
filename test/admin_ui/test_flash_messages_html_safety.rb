@@ -53,7 +53,7 @@ class Test::AdminUi::TestFlashMessagesHtmlSafety < Minitest::Capybara::Test
 
     mock_omniauth(omniauth_data) do
       assert_login_forbidden("Sign in with Google", "not verified")
-      assert_match("The email address 'unverified@example.com' is not verified. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.", page.body)
+      page.has_text?("The email address 'unverified@example.com' is not verified. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.")
     end
   end
 
@@ -72,7 +72,7 @@ class Test::AdminUi::TestFlashMessagesHtmlSafety < Minitest::Capybara::Test
 
     mock_omniauth(omniauth_data) do
       assert_login_forbidden("Sign in with Google", "not verified")
-      assert_match("The email address ''\"&gt;&lt;script&gt;alert('hello')&lt;/script&gt;' is not verified. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.", page.body)
+      page.has_text?("The email address ''\"&gt;&lt;script&gt;alert('hello')&lt;/script&gt;' is not verified. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.")
     end
   end
 
@@ -84,14 +84,13 @@ class Test::AdminUi::TestFlashMessagesHtmlSafety < Minitest::Capybara::Test
       },
       "extra" => {
         "raw_info" => {
-          "email_verified" => true,
         },
       },
     }
 
     mock_omniauth(omniauth_data) do
-      assert_login_forbidden("Sign in with Google", "not authorized")
-      assert_match("The account for 'noadmin@example.com' is not authorized to access the admin. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.", page.body)
+      assert_login_forbidden("Sign in with Google", "not verified")
+      page.has_text?("The email address 'noadmin@example.com' is not verified. Please contact us for further assistance.\nAdmin Sign In\nSign in with Google\nSign in with MAX.gov")
     end
   end
 
@@ -110,7 +109,7 @@ class Test::AdminUi::TestFlashMessagesHtmlSafety < Minitest::Capybara::Test
 
     mock_omniauth(omniauth_data) do
       assert_login_forbidden("Sign in with Google", "not authorized")
-      assert_match("The account for ''\"&gt;&lt;script&gt;alert('hello')&lt;/script&gt;' is not authorized to access the admin. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.", page.body)
+      page.has_text?("The account for ''\"&gt;&lt;script&gt;alert('hello')&lt;/script&gt;' is not authorized to access the admin. Please <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.")
     end
   end
 
@@ -124,7 +123,7 @@ class Test::AdminUi::TestFlashMessagesHtmlSafety < Minitest::Capybara::Test
 
     mock_omniauth(omniauth_data) do
       assert_login_forbidden("Sign in with MAX.gov", "must use multi-factor")
-      assert_match("You must use multi-factor authentication to sign in. Please try again, or <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.", page.body)
+      page.has_text?("You must use multi-factor authentication to sign in. Please try again, or <a href=\"https://example.com/contact/?q='&quot;&gt;&lt;script&gt;alert('hello')&lt;/script&gt;\">contact us</a> for further assistance.")
     end
   end
 

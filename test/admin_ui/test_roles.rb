@@ -38,7 +38,8 @@ class Test::AdminUi::TestRoles < Minitest::Capybara::Test
     fill_in "E-mail", :with => "example@example.com"
     fill_in "First Name", :with => "John"
     fill_in "Last Name", :with => "Doe"
-    label_check "User agrees to the terms and conditions", :click => { :x => 0, :y => 0 }
+    checkbox = find(:checkbox, 'termsAndConditions-termsAndConditions', :visible => false)
+    checkbox.click(offset = {x: 0, y: 0})
     selectize_add "Roles", "test-new-role"
     click_button("Save")
 
@@ -60,7 +61,8 @@ class Test::AdminUi::TestRoles < Minitest::Capybara::Test
     fill_in "E-mail", :with => "example@example.com"
     fill_in "First Name", :with => "John"
     fill_in "Last Name", :with => "Doe"
-    label_check "User agrees to the terms and conditions", :click => { :x => 0, :y => 0 }
+    checkbox = find(:checkbox, 'termsAndConditions-termsAndConditions', :visible => false)
+    checkbox.click(offset = {x: 0, y: 0})
     selectize_add "Roles", "test-new-user-role"
     click_button("Save")
 

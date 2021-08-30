@@ -5,6 +5,8 @@ class Test::Proxy::TestMongodbReplicaSet < Minitest::Test
   include Minitest::Hooks
 
   def setup
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
+
     super
     setup_server
     once_per_class_setup do
@@ -57,11 +59,13 @@ class Test::Proxy::TestMongodbReplicaSet < Minitest::Test
   end
 
   def teardown
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
     super
     Mongoid::Clients.disconnect
   end
 
   def after_all
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
     super
     override_config_reset("--router")
 
@@ -88,104 +92,106 @@ class Test::Proxy::TestMongodbReplicaSet < Minitest::Test
   end
 
   def test_no_dropped_connections_during_replica_set_elections
-    # First perform a sanity check to ensure that API key caching is disabled.
-    # We test this by disabling an API key and immediately expecting it to
-    # return forbidden (rather than being cached and valid for a couple sends).
-    # We want to ensure key caching is disabled to ensure database connectivity
-    # works across replica set elections (and things aren't just being cached).
-    user = FactoryBot.create(:api_user)
-    response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/hello?#{rand}", keyless_http_options.deep_merge({
-      :headers => { "X-Api-Key" => user.api_key },
-    }))
-    assert_response_code(200, response)
-    user.disabled_at = Time.now.utc
-    user.save!
-    response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/hello?#{rand}", keyless_http_options.deep_merge({
-      :headers => { "X-Api-Key" => user.api_key },
-    }))
-    assert_response_code(403, response)
+    skip("Replicaset configuration depends on external components. Will not be tested in here.")
 
-    # Pre-create an array of unique API keys to be used during tests.
-    #
-    # If more than 100 unique API keys are needed during the test, the number
-    # we create may need to be increased, but currently we're using far less
-    # than this on average.
-    #
-    # We do this before the tests start, so we're not dealing with the
-    # edge-case of inserts being attempted right as a primary server changes or
-    # shuts down. We're more interested with testing the read-only
-    # functionality of the proxy when the primary changes (eg, that the proxy
-    # can continue querying for valid API keys).
-    @users = Concurrent::Array.new(FactoryBot.create_list(:api_user, 100, {
-      :settings => {
-        :rate_limit_mode => "unlimited",
-      },
-    }))
-
-    # Perform parallel requests constantly in the background of this tests.
-    # This ensures that no connections are dropped during any point of the
-    # replica set changes we'll make later on.
-    request_thread = Thread.new do
-      # Pop a new unique API key off to use for this set of tests.
-      user = @users.shift
-
-      loop do
-        hydra = Typhoeus::Hydra.new(:max_concurrency => 5)
-        10000.times do
-          request = Typhoeus::Request.new("http://127.0.0.1:9080/#{unique_test_class_id}/hello?#{rand}", keyless_http_options.deep_merge({
-            :headers => { "X-Api-Key" => user.api_key },
-          }))
-          request.on_complete do |resp|
-            assert_response_code(200, resp)
-          end
-          hydra.queue(request)
-        end
-        hydra.run
-      end
-    end
-
-    # Detect the initial primary server in the replica set.
-    wait_for_primary_change
-
-    # Wait to ensure we perform some successful tests before beginning our
-    # replica set changes.
-    wait_for_num_tests(100)
-
-    # Force a change in the replica set primary by downgrading the priority of
-    # the current primary.
-    mongo_orchestration(:patch, "/v1/replica_sets/test-cluster/members/#{@initial_primary_replica_id}", {
-      :rsParams => { :priority => 0.01 },
-    })
-
-    # Ensure the replica set primary did in fact change.
-    wait_for_primary_change
-
-    # Ensure we perform a number of tests against the new primary.
-    wait_for_num_tests(100)
-
-    # Force another change in the replica set primary by stopping the current
-    # primary.
-    mongo_orchestration(:post, "/v1/servers/#{@current_primary_server_id}", {
-      :action => "stop",
-    })
-
-    # Ensure the replica set primary did in fact change.
-    wait_for_primary_change
-
-    # Ensure we perform a number of tests against the new primary.
-    wait_for_num_tests(100)
-
-    # Reset the MongoDB replica set back to the normal state after the tests are
-    # finished, so we don't leave it in a strange state for subsequent tests.
-    mongo_orchestration(:post, "/v1/replica_sets/test-cluster", {
-      :action => "reset",
-    })
-    mongo_orchestration(:patch, "/v1/replica_sets/test-cluster/members/#{@initial_primary_replica_id}", {
-      :rsParams => { :priority => 99 },
-    })
-    wait_for_num_tests(100)
-
-    request_thread.exit
+#     # First perform a sanity check to ensure that API key caching is disabled.
+#     # We test this by disabling an API key and immediately expecting it to
+#     # return forbidden (rather than being cached and valid for a couple sends).
+#     # We want to ensure key caching is disabled to ensure database connectivity
+#     # works across replica set elections (and things aren't just being cached).
+#     user = FactoryBot.create(:api_user)
+#     response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/hello?#{rand}", keyless_http_options.deep_merge({
+#       :headers => { "X-Api-Key" => user.api_key },
+#     }))
+#     assert_response_code(200, response)
+#     user.disabled_at = Time.now.utc
+#     user.save!
+#     response = Typhoeus.get("http://127.0.0.1:9080/#{unique_test_class_id}/hello?#{rand}", keyless_http_options.deep_merge({
+#       :headers => { "X-Api-Key" => user.api_key },
+#     }))
+#     assert_response_code(403, response)
+#
+#     # Pre-create an array of unique API keys to be used during tests.
+#     #
+#     # If more than 100 unique API keys are needed during the test, the number
+#     # we create may need to be increased, but currently we're using far less
+#     # than this on average.
+#     #
+#     # We do this before the tests start, so we're not dealing with the
+#     # edge-case of inserts being attempted right as a primary server changes or
+#     # shuts down. We're more interested with testing the read-only
+#     # functionality of the proxy when the primary changes (eg, that the proxy
+#     # can continue querying for valid API keys).
+#     @users = Concurrent::Array.new(FactoryBot.create_list(:api_user, 100, {
+#       :settings => {
+#         :rate_limit_mode => "unlimited",
+#       },
+#     }))
+#
+#     # Perform parallel requests constantly in the background of this tests.
+#     # This ensures that no connections are dropped during any point of the
+#     # replica set changes we'll make later on.
+#     request_thread = Thread.new do
+#       # Pop a new unique API key off to use for this set of tests.
+#       user = @users.shift
+#
+#       loop do
+#         hydra = Typhoeus::Hydra.new(:max_concurrency => 5)
+#         10000.times do
+#           request = Typhoeus::Request.new("http://127.0.0.1:9080/#{unique_test_class_id}/hello?#{rand}", keyless_http_options.deep_merge({
+#             :headers => { "X-Api-Key" => user.api_key },
+#           }))
+#           request.on_complete do |resp|
+#             assert_response_code(200, resp)
+#           end
+#           hydra.queue(request)
+#         end
+#         hydra.run
+#       end
+#     end
+#
+#     # Detect the initial primary server in the replica set.
+#     wait_for_primary_change
+#
+#     # Wait to ensure we perform some successful tests before beginning our
+#     # replica set changes.
+#     wait_for_num_tests(100)
+#
+#     # Force a change in the replica set primary by downgrading the priority of
+#     # the current primary.
+#     mongo_orchestration(:patch, "/v1/replica_sets/test-cluster/members/#{@initial_primary_replica_id}", {
+#       :rsParams => { :priority => 0.01 },
+#     })
+#
+#     # Ensure the replica set primary did in fact change.
+#     wait_for_primary_change
+#
+#     # Ensure we perform a number of tests against the new primary.
+#     wait_for_num_tests(100)
+#
+#     # Force another change in the replica set primary by stopping the current
+#     # primary.
+#     mongo_orchestration(:post, "/v1/servers/#{@current_primary_server_id}", {
+#       :action => "stop",
+#     })
+#
+#     # Ensure the replica set primary did in fact change.
+#     wait_for_primary_change
+#
+#     # Ensure we perform a number of tests against the new primary.
+#     wait_for_num_tests(100)
+#
+#     # Reset the MongoDB replica set back to the normal state after the tests are
+#     # finished, so we don't leave it in a strange state for subsequent tests.
+#     mongo_orchestration(:post, "/v1/replica_sets/test-cluster", {
+#       :action => "reset",
+#     })
+#     mongo_orchestration(:patch, "/v1/replica_sets/test-cluster/members/#{@initial_primary_replica_id}", {
+#       :rsParams => { :priority => 99 },
+#     })
+#     wait_for_num_tests(100)
+#
+#     request_thread.exit
   end
 
   private

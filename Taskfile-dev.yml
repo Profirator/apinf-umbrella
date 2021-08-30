@@ -223,7 +223,6 @@ tasks:
     cmds:
       - task: deps:bundler
       - task: deps:elasticsearch
-      - task: deps:geolitecity
       - task: deps:libcidr
       - task: deps:luarocks
       - task: deps:mongodb
@@ -232,7 +231,7 @@ tasks:
       - task: deps:perp
       - task: deps:rsyslog
       - task: deps:runit_svlogd
-      - task: deps:trafficserver
+      - task: perp
 
   build-deps:nodejs:
     cmds:

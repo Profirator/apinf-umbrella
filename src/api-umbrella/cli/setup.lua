@@ -128,17 +128,19 @@ end
 
 
 local function ensure_geoip_db()
-  -- If the city db path doesn't exist, copy it from the package installation
-  -- location to the runtime location (this path will then be overwritten by
-  -- the auto-updater so we don't touch the original packaged file).
-  local city_db_path = path.join(config["db_dir"], "geoip/GeoLite2-City.mmdb")
-  if not path.exists(city_db_path) then
-    local default_city_db_path = path.join(config["_embedded_root_dir"], "var/db/geoip/GeoLite2-City.mmdb")
-    dir.makepath(path.dirname(city_db_path))
-    file.copy(default_city_db_path, city_db_path)
-    chmod(city_db_path, tonumber("0640", 8))
-    if config["group"] then
-      chown(city_db_path, nil, config["group"])
+  if config["nginx"]["geoip"] == "on" then
+    -- If the city db path doesn't exist, copy it from the package installation
+    -- location to the runtime location (this path will then be overwritten by
+    -- the auto-updater so we don't touch the original packaged file).
+    local city_db_path = path.join(config["db_dir"], "geoip/GeoLite2-City.mmdb")
+    if not path.exists(city_db_path) then
+      local default_city_db_path = path.join(config["_embedded_root_dir"], "var/db/geoip/GeoLite2-City.mmdb")
+      dir.makepath(path.dirname(city_db_path))
+      file.copy(default_city_db_path, city_db_path)
+      chmod(city_db_path, tonumber("0640", 8))
+      if config["group"] then
+        chown(city_db_path, nil, config["group"])
+      end
     end
   end
 end
@@ -250,7 +252,9 @@ local function set_permissions()
     chown(config["tmp_dir"], user, group)
     chown(config["var_dir"], nil, group)
     chown(config["etc_dir"], nil, group)
-    chown(path.join(config["db_dir"], "geoip"), nil, group)
+    if config["nginx"]["geoip"] == "on" then
+      chown(path.join(config["db_dir"], "geoip"), nil, group)
+    end
     chown(path.join(config["etc_dir"], "elasticsearch"), nil, group)
     chown(path.join(config["etc_dir"], "nginx"), nil, group)
     chown(path.join(config["etc_dir"], "perp"), nil, group)
@@ -290,7 +294,9 @@ local function activate_services()
     active_services["elasticsearch-aws-signing-proxy"] = 1
   end
   if config["_service_router_enabled?"] then
-    active_services["geoip-auto-updater"] = 1
+    if config["nginx"]["geoip"] == "on" then
+      active_services["geoip-auto-updater"] = 1
+    end
     active_services["mora"] = 1
     active_services["nginx"] = 1
     active_services["rsyslog"] = 1

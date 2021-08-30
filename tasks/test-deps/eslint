@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -e -u -x
+
+source ./tasks/helpers.sh
+
+npm install -g eslint@5.16.0
+npm install -g eslint-plugin-ember --save-dev
+
+stamp

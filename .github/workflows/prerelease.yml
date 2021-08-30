@@ -1,0 +1,63 @@
+name: Pre-Release
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+
+env:
+  BASE_IMAGE_NAME: fiware/api-umbrella-base
+  TEST_IMAGE_NAME: fiware/api-umbrella-test
+  IMAGE_NAME: fiware/api-umbrella
+
+jobs:
+
+  prerelease:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - id: bump
+        uses: zwaldowski/match-label-action@v1
+        with:
+          allowed: major,minor,patch
+
+      - uses: zwaldowski/semver-release-action@v2
+        with:
+          dry_run: true
+          bump: ${{ steps.bump.outputs.match }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR Number
+        id: pr_number
+        run: echo "::set-output name=nr::$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')"
+
+      - name: Set version output
+        id: out
+        run: echo "::set-output name=version::$(echo ${VERSION}-PRE-${{ steps.pr_number.outputs.nr }})"
+
+      - name: generate temporary tag
+        run: echo IMAGE_TAG=${{ steps.out.outputs.version }} >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Log into registry
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build base
+        run: |
+          docker build -f Dockerfile-base -t api-umbrella-base:${{ env.IMAGE_TAG }} .
+
+      - name: Build and push snapshot
+        run: |
+          docker build -f Dockerfile-build-from-base -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} --build-arg BASE_IMAGE=api-umbrella-base:${{ env.IMAGE_TAG }} .
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}

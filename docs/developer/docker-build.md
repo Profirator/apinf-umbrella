@@ -9,20 +9,19 @@
 
 ## Building Images
 
-To build packages for the current API Umbrella version:
+The build is split into a base-image, that is used as the build-stage and the concrete image built of the base. 
 
-```bash
-$ git clone https://github.com/NREL/api-umbrella.git
-$ cd api-umbrella/docker
-$ docker build -t nrel/api-umbrella:INSERT_VERSION_HERE .
-$ docker tag nrel/api-umbrella:INSERT_VERSION_HERE nrel/api-umbrella:latest
+To build the base image for the current API Umbrella version:
+
+```
+docker build -f Dockerfile-base -t fiware/api-umbrella-base:INSERT_VERSION_HERE .
 ```
 
-## Pushing to Docker Hub
+To build the executable image of the previous base image, use the `Dockerfile-build-from-base`. The base image can be provided as a build argument. It defaults to the latest base image.
 
-To publish the new images to our [Docker Hub repository](https://hub.docker.com/r/nrel/api-umbrella/):
-
-```bash
-$ docker push nrel/api-umbrella:INSERT_VERSION_HERE
-$ docker push nrel/api-umbrella:latest
 ```
+docker build -f Dockerfile-build-from-base -t fiware/api-umbrella:INSERT_VERSION_HERE --build-arg BASE_IMAGE=fiware/api-umbrella-base:INSERT_VERSION_HERE .
+```
+
+> :warning: The dockerfiles `Dockerfile-beta-deploy`, `Dockerfile-build`, `Dockerfile-dev` and `Dockerfile-dev-build` are deprecated and will be
+> removed in the future.

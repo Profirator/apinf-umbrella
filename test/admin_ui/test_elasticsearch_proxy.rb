@@ -1,4 +1,5 @@
 require_relative "../test_helper"
+require "json"
 
 class Test::AdminUi::TestElasticsearchProxy < Minitest::Capybara::Test
   include Capybara::Screenshot::MiniTestPlugin
@@ -46,14 +47,15 @@ class Test::AdminUi::TestElasticsearchProxy < Minitest::Capybara::Test
     assert_text('"hits"')
 
     # Redirect rewriting
-    response = Typhoeus.get("https://127.0.0.1:9081/admin/elasticsearch/_plugin/foobar", keyless_http_options.deep_merge({
+    response = Typhoeus.get("https://127.0.0.1:9081/admin/elasticsearch/_cluster/health", keyless_http_options.deep_merge({
       :headers => {
         "Cookie" => "_api_umbrella_session=#{selenium_cookie_named("_api_umbrella_session").fetch(:value)}",
       },
     }))
-    assert_response_code(301, response)
-    assert_equal("/admin/elasticsearch/_plugin/foobar/", response.headers["Location"])
-    assert_match(%r{URL=/admin/elasticsearch/_plugin/foobar/}, response.body)
+
+    assert_response_code(200, response)
+    jsonBody = JSON.parse(response.body)
+    assert_match("docker-cluster", jsonBody["cluster_name"])
     assert_equal(response.body.bytesize, response.headers["Content-Length"].to_i)
   end
 end

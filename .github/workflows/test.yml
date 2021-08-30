@@ -1,0 +1,52 @@
+name: Run tests
+
+on:
+  push:
+
+
+env:
+  BASE_IMAGE_NAME: fiware/api-umbrella-base
+  TEST_IMAGE_NAME: api-umbrella-test
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Wait for base image
+        run: |
+          ./docker/wait-for.sh ${{ env.BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }} 15
+
+      - name: Build test image
+        run: |
+          docker build -f Dockerfile-test -t ${{ env.TEST_IMAGE_NAME }} --build-arg BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ steps.extract_branch.outputs.branch }} .
+
+      - name: Setup test env
+        run: |
+          docker-compose -f docker/compose/docker-compose.yaml up -d
+
+      # we need to use the host network, since some of the tests change the dns configuration of the container, thus destroy the connection through
+      # the docker network
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          docker run -v /test/reports:/app/test/reports -v /test/images:/app/test/tmp/capybara --network  host  ${{ env.TEST_IMAGE_NAME }} make test
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        if: always() # always run even if the previous step fails
+        with:
+          report_paths: '/test/reports/*.xml'
+
+      - uses: actions/upload-artifact@v2
+        if: always() # always run even if the previous step fails
+        with:
+          name: selenium-images
+          path: /test/images

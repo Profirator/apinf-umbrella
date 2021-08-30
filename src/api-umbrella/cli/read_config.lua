@@ -153,7 +153,7 @@ end
 -- in the config files, we denote those with an underscore prefix in the name.
 local function set_computed_config()
   if not config["root_dir"] then
-    config["root_dir"] = os.getenv("API_UMBRELLA_ROOT") or "/opt/api-umbrella"
+    config["root_dir"] =  os.getenv("API_UMBRELLA_ROOT") or "/opt/api-umbrella"
   end
 
   if not config["etc_dir"] then
