@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     branches:
-      - main
+      - master
 
 env:
   BASE_IMAGE_NAME: fiware/api-umbrella-base
