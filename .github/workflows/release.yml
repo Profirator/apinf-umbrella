@@ -53,3 +53,12 @@ jobs:
         run: |
           docker build -f Dockerfile-build-from-base -t ${{ env.IMAGE_NAME }}:latest --build-arg BASE_IMAGE=${{ env.BASE_IMAGE_NAME }}:${{ env.IMAGE_TAG }} .
           docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: ${{ steps.out.outputs.version }}
+          prerelease: false
+          title: ${{ steps.out.outputs.version }}
+          files: |
+            LICENSE.txt
