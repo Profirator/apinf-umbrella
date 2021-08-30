@@ -54,7 +54,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     assert_link("Download CSV", :href => /start_at=2015-01-12/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/admin/stats/logs.csv", uri.path)
+    assert_equal("/api-umbrella/v1/analytics/logs.csv", uri.path)
     assert_equal({
       "search" => "",
       "start_at" => "2015-01-12",
@@ -68,7 +68,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     assert_link("Download CSV", :href => /start_at=2015-01-13/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/admin/stats/logs.csv", uri.path)
+    assert_equal("/api-umbrella/v1/analytics/logs.csv", uri.path)
     assert_equal({
       "search" => "",
       "start_at" => "2015-01-13",
@@ -87,7 +87,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     assert_link("Download CSV", :href => /#{Regexp.escape(CGI.escape('"rules":[]'))}/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/api-umbrella//stats/logs.csv", uri.path)
+    assert_equal("/api-umbrella/v1/analytics/logs.csv", uri.path)
     assert_equal({
       "start_at" => "2015-01-12",
       "end_at" => "2015-01-18",
@@ -128,7 +128,7 @@ class Test::AdminUi::TestStatsLogs < Minitest::Capybara::Test
     assert_link("Download CSV", :href => /start_at=2015-01-12/)
     link = find_link("Download CSV")
     uri = Addressable::URI.parse(link[:href])
-    assert_equal("/api-umbrella//stats/logs.csv", uri.path)
+    assert_equal("/api-umbrella/v1/analytics/logs.csv", uri.path)
     assert_equal({
       "search" => "",
       "start_at" => "2015-01-12",
