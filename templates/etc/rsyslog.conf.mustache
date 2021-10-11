@@ -34,7 +34,7 @@ template(name="template-stdout" type="list") {
 }
 
 ruleset(name="analytics-ruleset" queue.type="FixedArray" queue.size="5000") {
-  include(file="{{etc_dir}}/rsyslog.d/analytics.conf")
+  include(file="/etc/rsyslog.d/analytics.conf")
 }
 
 {{#log._destination_console?}}

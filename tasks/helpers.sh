@@ -10,6 +10,8 @@ INSTALL_PREFIX_EMBEDDED="$INSTALL_PREFIX/embedded"
 WORK_DIR="$SOURCE_DIR/build/work"
 PACKAGE_WORK_DIR="$SOURCE_DIR/build/package/work"
 
+OPENRESTY_DIR="/usr/local/openresty"
+
 # Where to stage installations during "make" phase.
 STAGE_DIR="$WORK_DIR/stage"
 STAGE_PREFIX_DIR="$STAGE_DIR$INSTALL_PREFIX"
@@ -40,9 +42,8 @@ APP_CORE_VENDOR_DIR="$APP_CORE_DIR/shared/vendor"
 APP_CORE_VENDOR_BUNDLE_DIR="$APP_CORE_VENDOR_DIR/bundle"
 APP_CORE_VENDOR_LUA_DIR="$APP_CORE_VENDOR_DIR/lua"
 APP_CORE_VENDOR_LUA_SHARE_DIR="$APP_CORE_VENDOR_LUA_DIR/share/lua/5.1"
-LUA_PREFIX="$STAGE_EMBEDDED_DIR"
-LUAROCKS_CMD=(env "LUA_PATH=$LUA_PREFIX/openresty/luajit/share/lua/5.1/?.lua;$LUA_PREFIX/openresty/luajit/share/lua/5.1/?/init.lua;;" "LUAROCKS_SYSCONFDIR=$LUA_PREFIX/openresty/luajit/etc/luarocks" "$LUA_PREFIX/bin/luarocks")
-OPM_CMD=(env "LUA_PATH=$LUA_PREFIX/openresty/lualib/?.lua;$LUA_PREFIX/openresty/lualib/?/init.lua;;" "PATH=$STAGE_EMBEDDED_PATH" "LD_LIBRARY_PATH=$STAGE_EMBEDDED_DIR/openresty/luajit/lib:$STAGE_EMBEDDED_DIR/lib" opm)
+LUAROCKS_CMD=(env "LUA_PATH=$OPENRESTY_DIR/luajit/share/lua/5.1/?.lua;$OPENRESTY_DIR/luajit/share/lua/5.1/?/init.lua;;" "LUAROCKS_SYSCONFDIR=$OPENRESTY_DIR/luajit/etc/luarocks" "luarocks")
+OPM_CMD=(env "LUA_PATH=$OPENRESTY_DIR/lualib/?.lua;$OPENRESTY_DIR/lualib/?/init.lua;;" "PATH=$STAGE_EMBEDDED_PATH" "LD_LIBRARY_PATH=$OPENRESTY_DIR/luajit/lib:$STAGE_EMBEDDED_DIR/lib" opm)
 
 # Determine the sub-path for the currently executing task. This can be used for
 # generating unique directories for the current task.

@@ -1,15 +1,12 @@
 app_env: production
 services:
-  - general_db
-  - log_db
   - router
-  - web
 user: api-umbrella
 group: api-umbrella
 rlimits:
   nofile: 100000
   nproc: 20000
-http_port: 80
+http_port: 8080
 https_port: 443
 listen:
   addresses:
@@ -18,7 +15,7 @@ listen:
 nginx:
   workers: auto
   worker_connections: 8192
-  error_log_level: warn
+  error_log_level: info
   access_log_filename: access.log
   access_log_options: buffer=256k flush=10s
   large_client_header_buffers: 4 8k
@@ -177,7 +174,7 @@ rsyslog:
   host: 127.0.0.1
   port: 14014
 log:
-  destination: file
+  destination: console
 dns_resolver:
   negative_ttl: 60
   max_stale: 86400
@@ -188,43 +185,19 @@ dns_resolver:
   # default. Enabling may also break certain hosting environments that still
   # aren't IPv6 compatible.
   allow_ipv6: false
+# config used by mora
 mongodb:
-  url: "mongodb://127.0.0.1:14001/api_umbrella"
+  url: "mongodb://127.0.0.1:27017/api_umbrella"
   read_preference: primaryPreferred
-  embedded_server_config:
-    processManagement:
-      fork: false
-    net:
-      bindIp: 127.0.0.1
-      port: 14001
 mora:
   host: 127.0.0.1
-  port: 14004
+  port: 8181
   timeout: 0
 elasticsearch:
   hosts:
-    - "http://127.0.0.1:14002"
-  embedded_server_env:
-    heap_size: 512m
+    - "http://127.0.0.1:9200"
   api_version: 2
   template_version: 1
-  embedded_server_config:
-    network:
-      host: 127.0.0.1
-    http:
-      port: 14002
-    transport:
-      tcp:
-        port: 14003
-    cluster:
-      name: api-umbrella
-    indices:
-      fielddata:
-        cache:
-          size: 40%
-      breaker:
-        fielddata:
-          limit: 60%
   aws_signing_proxy:
     host: 127.0.0.1
     port: 14017

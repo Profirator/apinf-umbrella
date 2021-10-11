@@ -39,11 +39,11 @@ if [ -f /etc/redhat-release ]; then
     tcl
 
     # ElasticSearch
-    java-1.8.0-openjdk-headless
+    openjdk-11-jre
     which
 
     # rsyslog omelasticsearch
-    libcurl
+    # libcurl
 
     # init.d script helpers
     initscripts
@@ -128,9 +128,9 @@ if [ -f /etc/redhat-release ]; then
     sudo
   )
 elif [ -f /etc/debian_version ]; then
-  libcurl_version=3
+  libcurl_version=4
   libtool_bin_package="libtool-bin"
-  openjdk_version=8
+  openjdk_version=11
 
   if [[ "$ID" == "ubuntu" && "$VERSION_ID" == "18.04" ]]; then
     libcurl_version=4
