@@ -2,14 +2,6 @@ name: Build branch base
 
 on:
   push:
-    paths:
-      - .github/workflows/base.yml
-      - Dockerfile-base
-      - tasks/**
-      - src/**
-      - scripts/**
-      - docker/**
-      - config/**
     workflow_dispatch:
 
 env:
