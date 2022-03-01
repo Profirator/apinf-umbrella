@@ -52,10 +52,10 @@ local function request(url, options)
    elseif (res.status ~= 200 and res.status ~= 201) then
       msg = "Request to "..url.." not ok, received status code "..res.status
       if res.reason then
-	 msg = msg..", Reason: "..res.reason
+	       msg = msg..", Reason: "..res.reason
       end
       if res.body then
-	 msg = msg..", Body: "..res.body
+	       msg = msg..", Body: "..res.body
       end 
       return nil, msg
    elseif err then
@@ -128,24 +128,22 @@ end
 
 -- Get delegation evidence from iSHARE AR using valid access_token
 -- prev_steps is optional
-function _M.get_delegation_evidence(issuer, target, policy, delegation_url, access_token, prev_steps)
+function _M.get_delegation_evidence(issuer, target, policies, delegation_url, access_token, prev_steps)
 
    -- Build payload body of request
    local payload = {
       delegationRequest = {
-	 policyIssuer = issuer,
-	 target = {
-	    accessSubject = target
-	 },
-	 policySets = {}
+	       policyIssuer = issuer,
+	       target = {
+	          accessSubject = target
+	       },
+	       policySets = {}
       }
    }
    if prev_steps then
       payload["prev_steps"] = {}
       table.insert(payload["prev_steps"], prev_steps)
    end
-   local policies = {}
-   table.insert(policies, policy)
    table.insert(payload.delegationRequest.policySets, {})
    payload.delegationRequest.policySets[1] = {
       policies = policies
@@ -217,23 +215,32 @@ function _M.validate_ishare_jwt(token)
    if not err then
       local subname, err = cr:get_subject_name()
       if err then
-	 return "Error when retrieving subject name from certificate: "..err
+	       return "Error when retrieving subject name from certificate: "..err
       end
       local serialnumber, pos, err = subname:find("serialNumber")
       if err then
-	 return "Error when retrieving serial number from certificate: "..err
+	       return "Error when retrieving serial number from certificate: "..err
       end
       if not serialnumber then
-	 return "Empty serial number in certificate"
+	       return "Empty serial number in certificate"
       end
       local certsub = serialnumber.blob
       local payload = decoded_token["payload"]
       local issuer = payload['iss']
       if certsub ~= issuer then
-	 return "Certificate serial number "..certsub.." does not equal policy issuer "..issuer
+	       return "Certificate serial number "..certsub.." does not equal policy issuer "..issuer
       end
    else
       return "Error when loading certificate: "..err
+   end
+
+   -- Check for exp and iat in payload
+   local now = os.time()
+   local payload = decoded_token["payload"]
+   local exp = payload['exp']
+   local iat = payload['iat']
+   if exp < now or iat > now then
+      return "JWT has expired or was issued in the future"
    end
    
    -- Verify signature
@@ -245,7 +252,7 @@ function _M.validate_ishare_jwt(token)
       jwt_obj = jwt:verify(nil, token)
    end
    if not jwt_obj["valid"] then
-      return "User policy JWT is not valid"
+      return "Authorization JWT from sender is not valid"
    end
    if not jwt_obj["verified"] then
       return "Verification failed: "..jwt_obj["reason"]

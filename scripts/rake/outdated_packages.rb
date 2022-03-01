@@ -131,7 +131,7 @@ class OutdatedPackages
       :string_version => true,
     },
     "pcre" => {
-      :http => "https://ftp.pcre.org/pub/pcre/",
+      :http => "https://downloads.sourceforge.net/project/pcre/pcre/",
     },
     "perp" => {
       :http => "http://b0llix.net/perp/site.cgi?page=download",
