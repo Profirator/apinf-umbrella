@@ -42,7 +42,8 @@ export default Component.extend({
 
     this.authModeOptions = [
       { id: null, name: 'Default: Role based' },
-      { id: 'cb_attr_ishare_auto', name: 'Context Broker attribute based - iSHARE compliant (automatically)' }
+      { id: 'cb_attr_ishare_auto', name: 'NGSI-LD attribute based - iSHARE compliant' },
+      { id: 'sidecar_proxy_auth_endpoint_config_ishare', name: 'Sidecar-Proxy Authorization endpoint configuration - iSHARE compliant' }
     ];
   },
 });

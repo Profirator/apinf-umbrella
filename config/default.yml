@@ -440,3 +440,47 @@ _test_config:
   default_null_override_hash:
   default_null_override_string:
   default_empty_hash_override_hash: {}
+
+
+  
+### iSHARE specific configuration
+### Needs to be set, when iSHARE-compliant authorization modes are used
+
+# JWS config
+#jws:
+#  # EORI of local authority
+#  identifier: <LOCAL_EORI>
+#  # (Optional) Location of root CA file - required if no satellite information is provided
+#  # x5c certificate chain as array, local public certificate at first
+#  x5c:
+#    - <PUBLIC-CERT>
+#    - <INTERMDIATE-CERT-1>
+#    - ...
+#    - <ROOT-CERT>
+#  # Private key
+#  private_key: |
+#    -----BEGIN PRIVATE KEY-----
+#    ....
+#    -----END PRIVATE KEY-----
+#
+## Config for local authorisation registry
+#authorisation_registry:
+#  # Host
+#  host: <AR_HOST>
+#  # Endpoint for /token requests (full URL)
+#  token_endpoint: <AR_HOST/token>
+#  # Endpoint for /delegation requests to fetch policies (full URL)
+#  delegation_endpoint: <AR_HOST/delegation>
+#  # EORI of authorisation registry
+#  identifier: <AR_EORI>
+#
+## (Optional) Config for satellite - required if no root CA is provided
+#satellite:
+#  # Host
+#  host: <SATELLITE_HOST>
+#  # Endpoint for /token requests (full URL)
+#  token_endpoint: <SATELLITE_HOST/token>
+#  # Endpoint for /trusted_list requests to fetch trusted root CAs (full URL)
+#  trusted_list_endpoint: <SATELLITE_HOST/trusted_list>
+#  # EORI of satellite
+#  identifier: <SATELLITE_EORI>

@@ -17,6 +17,13 @@ if config["jws"] and config["jws"]["root_ca_file"] then
    isTrustCASet = true
 end
 
+-- Transforms a raw binary string to HEX
+local function tohex(str)
+   return (str:gsub('.', function (c)
+      return string.format('%02X', string.byte(c))
+   end))
+end
+
 -- Generate random string with characters and digits
 local function random_string(l)
    local chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -63,6 +70,87 @@ local function request(url, options)
    end
 
    return res, nil
+end
+
+-- Check required API Umbrella config parameters
+function _M.check_config_ar()
+
+   -- Check for required config parameters
+   if ( (not config["jws"]) or (not config["jws"]["private_key"]) or (not config["jws"]["x5c"]) ) then
+      ngx.log(ngx.ERR, "Missing JWS information (PrivateKey+Certificates) in config")
+      return "policy_validation_failed", {
+	       validation_error = "Internal error"
+      }
+   end
+   if (not config["jws"]) or (not config["jws"]["identifier"]) then
+      ngx.log(ngx.ERR, "Missing local identifier information in jws config")
+      return "policy_validation_failed", {
+	       validation_error = "Internal error"
+      }
+   end
+   local local_eori = config["jws"]["identifier"]
+   if (not config["authorisation_registry"]) or (not config["authorisation_registry"]["identifier"]) then
+      ngx.log(ngx.ERR, "Missing identifier information in AR config")
+      return "policy_validation_failed", {
+	       validation_error = "Internal error"
+      }
+   end
+   local local_ar_eori = config["authorisation_registry"]["identifier"]
+   if not config["authorisation_registry"]["host"] then
+      ngx.log(ngx.ERR, "Missing local authorisation registry host information in config")
+      return "policy_validation_failed", {
+	       validation_error = "Internal error"
+      }
+   end
+   local local_ar_host = config["authorisation_registry"]["host"]
+   local local_token_url = config["authorisation_registry"]["token_endpoint"]
+   local local_delegation_url = config["authorisation_registry"]["delegation_endpoint"]
+   if not local_token_url then
+      ngx.log(ngx.ERR, "Missing local authorisation registry /token endpoint information in config")
+      return "policy_validation_failed", {
+	       validation_error = "Internal error"
+      }
+   end
+   if not local_delegation_url then
+      ngx.log(ngx.ERR, "Missing local authorisation registry /delegation endpoint information in config")
+      return "policy_validation_failed", {
+	       validation_error = "Internal error"
+      }
+   end
+   
+end
+
+-- Check required API Umbrella config parameters
+function _M.check_config_satellite()
+
+   -- Check for required config parameters
+   if ( (not config["jws"]) or (not config["jws"]["private_key"]) or (not config["jws"]["x5c"]) ) then
+      ngx.log(ngx.ERR, "Missing JWS information (PrivateKey+Certificates) in config")
+      return "Internal error"
+   end
+   if (not config["jws"]) or (not config["jws"]["identifier"]) then
+      ngx.log(ngx.ERR, "Missing local identifier information in jws config")
+      return "Internal error"
+   end
+   if (not config["satellite"]) or (not config["satellite"]["identifier"]) then
+      ngx.log(ngx.ERR, "Missing identifier information in Satellite config")
+      return "Internal error"
+   end
+   if not config["satellite"]["host"] then
+      ngx.log(ngx.ERR, "Missing Satellite host information in config")
+      return "Internal error"
+   end
+   local satellite_token_url = config["satellite"]["token_endpoint"]
+   local satellite_trusted_list_url = config["satellite"]["trusted_list_endpoint"]
+   if not satellite_token_url then
+      ngx.log(ngx.ERR, "Missing Satellite /token endpoint information in config")
+      return "Internal error"
+   end
+   if not satellite_trusted_list_url then
+      ngx.log(ngx.ERR, "Missing Satellite /trusted_list endpoint information in config")
+      return "Internal error"
+   end
+   
 end
 
 -- Get access token from AR (or other iSHARE participant)
@@ -141,8 +229,8 @@ function _M.get_delegation_evidence(issuer, target, policies, delegation_url, ac
       }
    }
    if prev_steps then
-      payload["prev_steps"] = {}
-      table.insert(payload["prev_steps"], prev_steps)
+      payload["previous_steps"] = {}
+      table.insert(payload["previous_steps"], prev_steps)
    end
    table.insert(payload.delegationRequest.policySets, {})
    payload.delegationRequest.policySets[1] = {
@@ -187,6 +275,84 @@ function _M.get_delegation_evidence(issuer, target, policies, delegation_url, ac
    end
    
    return decoded_token["payload"]["delegationEvidence"], nil
+end
+
+local function get_trusted_list()
+
+   -- Check for required config parameters for AR
+   local err = _M.check_config_satellite()
+   if err then
+      return nil, err
+   end
+   local local_eori = config["jws"]["identifier"]
+   local satellite_eori = config["satellite"]["identifier"]
+   local satellite_token_url = config["satellite"]["token_endpoint"]
+   local satellite_trusted_list_url = config["satellite"]["trusted_list_endpoint"]
+
+   -- Get token at Satellite
+   local token, err = _M.get_token(satellite_token_url, local_eori, local_eori, satellite_eori)
+   if err then
+      return nil, err
+   end
+
+   -- Build header of request
+   local headers = {}
+   headers["Authorization"] = "Bearer "..token
+   
+   -- Send request to /delegation endpoint of AR at delegation_url
+   local ssl = false
+   local options = {
+      method = "GET",
+      headers = headers,
+      ssl_verify = ssl,
+   }
+   local res, err = request(satellite_trusted_list_url, options)
+   if err then
+      return nil, "Error when retrieving trusted list from Satellite: "..err
+   end
+
+   -- Get trusted_list_token from response
+   local res_body = cjson.decode(res.body)
+   local trusted_list_token = res_body["trusted_list_token"]
+   
+   if not trusted_list_token then
+      return nil, "trusted_list_token not found in response: "..res_body
+   end
+
+   -- Decode trusted_list_token
+   local decoded_token = jwt:load_jwt(trusted_list_token)
+   if not decoded_token["valid"] then
+      return nil, "The received trusted_list JWT is not valid"
+   end
+
+   -- Get trusted_list
+   if not decoded_token["payload"] and not decoded_token["payload"]["trusted_list"] then
+      return nil, "The received trusted list JWT contains no element trusted_list"
+   end
+
+   return decoded_token["payload"]["trusted_list"]
+   
+end
+
+local function check_ca_fingerprint(ca_fingerprint)
+   -- Get trusted list from satellite
+   local trusted_list, err = get_trusted_list()
+   if err then
+      return err
+   end
+
+   -- Iterate over trusted list and compare to CA fingerprint
+   for index, value in pairs(trusted_list) do
+      if trusted_list[index] then
+	 if trusted_list[index]["certificate_fingerprint"] then
+	    if string.upper(trusted_list[index]["certificate_fingerprint"]) == string.upper(ca_fingerprint) then
+	       return nil
+	    end
+	 end
+      end
+   end
+
+   return "No matching certificate fingerprint in trusted list found"
 end
 
 -- Validate and verify iSHARE JWT
@@ -244,11 +410,35 @@ function _M.validate_ishare_jwt(token)
    end
    
    -- Verify signature
-   -- If Root CA file is set, the verification will include validation of the cert chain
    local jwt_obj = nil
    if not isTrustCASet then
-      jwt_obj = jwt:verify(pub_key, token)
+      -- Verify fingerprint of x5c root CA against trusted_list of satellite
+      local root_cert = header["x5c"][#header["x5c"]]
+      root_cert = "-----BEGIN CERTIFICATE-----\n"..root_cert.."\n-----END CERTIFICATE-----\n"
+      local root_x509, root_err = x509.new(root_cert)
+      if root_err then
+	 return "Error when loading x5c root CA: "..root_err
+      end
+      
+      local dig = root_x509:digest("sha256")
+      local ca_fingerprint = tohex(dig)
+      err = check_ca_fingerprint(ca_fingerprint)
+      if err then
+	 return "Verification of x5c root CA failed: "..err
+      end
+      
+      -- Verify JWT against x5c certificate chain / root CA and intermediate certs
+      local cert_chain = ""
+      for index, value in ipairs(header["x5c"]) do
+	 --if index ~= 1 then
+	 cert_chain = cert_chain.."-----BEGIN CERTIFICATE-----\n"..value.."\n-----END CERTIFICATE-----\n"
+	 --end
+      end
+      --jwt_obj = jwt:verify(pub_key, token)
+      jwt_obj = jwt:verify(cert_chain, token)
    else
+      -- Root CA file is set
+      -- Verify JWT against provided root CA
       jwt_obj = jwt:verify(nil, token)
    end
    if not jwt_obj["valid"] then

@@ -298,7 +298,7 @@ local function get_ext_provider_user_info(token, dict)
 end
 
 local function get_jwt_policies_user_info(token, dict)
-   -- CB-attr based auth user info from JWT
+   -- iSHARE based auth user info from JWT
    local result = {}
    local err, parsed_token
    
@@ -365,8 +365,8 @@ function _M.first(dict)
     -- Check if the request is made by an external IDM
     if dict["key_auth_provider"] ~= nil then
         result, err = get_ext_provider_user_info(token, dict)
-    elseif string.find(dict["mode"], "cb_attr") then
-       -- CB-attribute based authorization without external IDP, but external registry and policies
+    elseif string.find(dict["mode"], "ishare") then
+       -- iSHARE-compliant authorization without external IDP, but external registry and policies
        result, err = get_jwt_policies_user_info(token, dict)
     else
         -- Using local IDP, so using local configuration

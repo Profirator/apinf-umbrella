@@ -67,8 +67,8 @@ return function(settings)
     end
   end
 
-  -- Check if CB-attr-based authentication was chosen
-  if settings and settings["auth_mode"] and string.find(settings["auth_mode"], "cb_attr") then
+  -- Check if iSHARE-compliant authentication was chosen
+  if settings and settings["auth_mode"] and string.find(settings["auth_mode"], "ishare") then
      if not config["authorisation_registry"] then
 	ngx.log(ngx.ERR, "Missing authorisation registry information in config at gatekeeper.authorisation_registry")
 	return "policy_validation_failed", {
@@ -96,7 +96,8 @@ return function(settings)
 
   -- Check if the user is trying to use an access token when external IDP is not allowed
   local is_attr_based_auth = settings and settings["auth_mode"] and string.find(settings["auth_mode"], "cb_attr")
-  if api_key["key_type"] == "token" and (not settings or (not settings["disable_api_key"] and not settings["ext_auth_allowed"] and not is_attr_based_auth)) then
+  local is_sp_auth_endpoint_config = settings and settings["auth_mode"] and string.find(settings["auth_mode"], "sidecar_proxy_auth_endpoint_config")
+  if api_key["key_type"] == "token" and (not settings or (not settings["disable_api_key"] and not settings["ext_auth_allowed"] and not is_attr_based_auth and not is_sp_auth_endpoint_config)) then
     return nil, "token_not_supported"
   end
 

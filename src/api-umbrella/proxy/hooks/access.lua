@@ -8,6 +8,7 @@ end
 local api_key_validator = require "api-umbrella.proxy.middleware.api_key_validator"
 local api_settings = require "api-umbrella.proxy.middleware.api_settings"
 local policy_validator_cb_ishare_auto = require "api-umbrella.proxy.middleware.policy_validator_cb_ishare_auto"
+local policy_validator_sp_auth_endpoint_ishare = require "api-umbrella.proxy.middleware.policy_validator_sp_auth_endpoint_ishare"
 local error_handler = require "api-umbrella.proxy.error_handler"
 local https_transition_user_validator = require "api-umbrella.proxy.middleware.https_transition_user_validator"
 local https_validator = require "api-umbrella.proxy.middleware.https_validator"
@@ -90,9 +91,16 @@ if err then
   return error_handler(err, settings)
 end
 
--- If this API requires CB-attribute based iSHARE-compliant  authorisation, verify that the
+-- If this API requires NGSI-attribute based iSHARE-compliant authorisation, verify that the
 -- user has the required policies
 err, err_data = policy_validator_cb_ishare_auto(settings, user)
+if err then
+   return error_handler(err, settings, err_data)
+end
+
+-- if this API requires Sidecar-Proxy Authorization endpoint configuration service
+-- authorisation (iSHARE-compliant), verify that the user has the required policies
+err, err_data = policy_validator_sp_auth_endpoint_ishare(settings, user)
 if err then
    return error_handler(err, settings, err_data)
 end

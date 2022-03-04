@@ -199,7 +199,7 @@ end
 return function(settings, user)
 
    -- If this API does not require CB attribute based authorisation, continue on
-   if (not settings or not settings["auth_mode"] or not string.find(settings["auth_mode"], "cb_attr")) then
+   if (not settings) or (not settings["auth_mode"]) or (not string.find(settings["auth_mode"], "cb_attr")) then
       return nil
    end
 
@@ -213,57 +213,22 @@ return function(settings, user)
       }
    end
 
-   -- Check for required config parameters
-   if ( (not config["jws"]) or (not config["jws"]["private_key"]) or (not config["jws"]["x5c"]) ) then
-      ngx.log(ngx.ERR, "Missing JWS information (PrivateKey+Certificates) in config")
-      return "policy_validation_failed", {
-	       validation_error = "Internal error"
-      }
-   end
-   if (not config["jws"]) or (not config["jws"]["identifier"]) then
-      ngx.log(ngx.ERR, "Missing local identifier information in jws config")
-      return "policy_validation_failed", {
-	       validation_error = "Internal error"
-      }
+   -- Check for required config parameters for AR
+   local err, err_data = ishare.check_config_ar()
+   if err then
+      return err, err_data
    end
    local local_eori = config["jws"]["identifier"]
-   if (not config["authorisation_registry"]) or (not config["authorisation_registry"]["identifier"]) then
-      ngx.log(ngx.ERR, "Missing identifier information in AR config")
-      return "policy_validation_failed", {
-	       validation_error = "Internal error"
-      }
-   end
    local local_ar_eori = config["authorisation_registry"]["identifier"]
-   if not config["authorisation_registry"]["host"] then
-      ngx.log(ngx.ERR, "Missing local authorisation registry host information in config")
-      return "policy_validation_failed", {
-	       validation_error = "Internal error"
-      }
-   end
    local local_ar_host = config["authorisation_registry"]["host"]
    local local_token_url = config["authorisation_registry"]["token_endpoint"]
    local local_delegation_url = config["authorisation_registry"]["delegation_endpoint"]
-   if not local_token_url then
-      ngx.log(ngx.ERR, "Missing local authorisation registry /token endpoint information in config")
-      return "policy_validation_failed", {
-	       validation_error = "Internal error"
-      }
-   end
-   if not local_delegation_url then
-      ngx.log(ngx.ERR, "Missing local authorisation registry /delegation endpoint information in config")
-      return "policy_validation_failed", {
-	       validation_error = "Internal error"
-      }
-   end
    
-      
-   
-
    -- Validate incoming iSHARE JWT 
    local err = ishare.validate_ishare_jwt(user["api_key"])
    if err then
       return "policy_validation_failed", {
-	       validation_error = "User JWT could not be validated: "..err
+	       validation_error = "Authorization JWT could not be validated: "..err
       }
    end
    
@@ -339,7 +304,7 @@ return function(settings, user)
    -- Validate user policy if available
    if user_policies then
       -- Compare user policy with required policy
-      matching_policies, err = compare_policies(user_policies, req_policies, user_policy_targetsub, user["sub"])
+      local matching_policies, err = compare_policies(user_policies, req_policies, user_policy_targetsub, user["sub"])
       if err then
 	       return "policy_validation_failed", {
 	          validation_error = "Unauthorized user policy: "..err

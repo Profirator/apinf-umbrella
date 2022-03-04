@@ -211,9 +211,9 @@ class Api::Settings
   end
 
   def validate_auth_mode
-    if(self.auth_mode.present? && self.auth_mode.include?('cb_attr'))
+    if(self.auth_mode.present? && self.auth_mode.include?('ishare'))
       unless(!self.ext_auth_allowed)
-        self.errors.add("error_data", "If external auth is enabled, authorization mode can not be CB attribute based")
+        self.errors.add("error_data", "If external IDP auth is enabled, authorization mode can not be based on iSHARE")
       end
     end
   end

@@ -37,6 +37,9 @@ local function lookup_user(api_key)
   elseif api_key["key_type"] == "token" and string.find(api_key["mode"], "cb_attr") then
     -- CB-Attribute-based authorisation, no IDP authorisation, but JWT handled in idp.lua
     ext_user, idp_err = idp.first(api_key)
+  elseif api_key["key_type"] == "token" and string.find(api_key["mode"], "sidecar_proxy_auth_endpoint_config") then
+    -- Sidecar-Proxy Authorization endpoint config service authorisation, no IDP authorisation, but JWT handled in idp.lua
+    ext_user, idp_err = idp.first(api_key)
   end
 
   -- Check if there are errors reading database or external user
@@ -116,8 +119,8 @@ local function lookup_user(api_key)
       end
     end
 
-    -- For CB attribute based policies in JWT, Add extracted parameters from decoded JWT again
-    if api_key["key_type"] == "token" and string.find(api_key["mode"], "cb_attr") and ext_user then
+    -- For iSHARE-compliant policies in JWT, Add extracted parameters from decoded JWT again
+    if api_key["key_type"] == "token" and string.find(api_key["mode"], "ishare") and ext_user then
        user["iss"] = ext_user["iss"]
        user["sub"] = ext_user["sub"]
        user["aud"] = ext_user["aud"]
