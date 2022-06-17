@@ -269,7 +269,7 @@ return function(settings, user)
       local target = user["sub"]
       local api_key = user["api_key"]
       local user_del_evi = {}
-      user_del_evi, err = get_delegation_evidence_ext(issuer, target, req_policies, token_url, ar_eori, delegation_url, api_key)
+      user_del_evi, err = get_delegation_evidence_ext(issuer, target, req_policies, token_url, ar_eori, delegation_url, nil)
       if err then
 	       return "policy_validation_failed", {
 	    validation_error = "Error when retrieving delegation evidence from user AR: "..err
