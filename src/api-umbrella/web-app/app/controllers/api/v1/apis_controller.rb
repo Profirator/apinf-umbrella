@@ -187,6 +187,7 @@ class Api::V1::ApisController < Api::V1::BaseController
         ],
         :sub_settings => [
           :id,
+          :sort_order,
           :http_method,
           :regex,
           {

@@ -30,13 +30,26 @@ module ApiUmbrella
           raise ActiveModel::ForbiddenAttributesError
         end
 
-        data = data.deep_dup
+        data_attr = data.deep_dup
 
         old_data = self.attributes
-        attributify_data!(data, old_data)
+        attributify_data!(data_attr, old_data)
 
-        data.permit!
-        self.assign_attributes(data)
+        data_attr.permit!
+        self.assign_attributes(data_attr)
+
+        # Changing the order of embeds_many attributes does not
+        # change the order when assigning attributes. Workarround
+        # this by creating the collection in the right order
+        if(self.class == ::Api)
+            if(data["sub_settings"].present? && data["sub_settings"].any? && data["sub_settings"].first["sort_order"].present?)
+              self.sub_settings.clear
+
+              data_attr["sub_settings_attributes"].each do |sub_setting|
+                self.sub_settings.create sub_setting
+              end
+            end
+        end
       end
     end
 
