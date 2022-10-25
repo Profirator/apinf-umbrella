@@ -14,7 +14,7 @@ extra_css:
     "https://www.fiware.org/style/fiware_readthedocs_security.css",
   ]
 #google_analytics: ['UA-83236805-2', 'fiware-api-umbrella.readthedocs.io']
-pages:
+nav:
   - Home: "index.md"
   # - "User & Programmers Manual":
   #     - "API Walkthrough & Development intro": "usermanual.md"
